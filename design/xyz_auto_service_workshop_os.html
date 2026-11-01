@@ -1,0 +1,2829 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XYZ Auto Service — Hệ thống Đặt lịch & Điều phối Bảo dưỡng Ô tô</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans, Space Grotesk, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Space Grotesk', 'Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            asphalt: '#0B0D10',
+            signal: {
+              DEFAULT: '#FF5722',
+              hover: '#F4511E',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-primary: #0B0D10;
+      --bg-surface: #13171D;
+      --bg-elevated: #191F28;
+      --border-color: #222934;
+      --text-main: #F1F5F9;
+      --text-muted: #94A3B8;
+    }
+
+    html:not(.dark) {
+      --bg-primary: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #F1F5F9;
+      --border-color: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .card-surface {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+    }
+
+    .card-elevated {
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+    }
+
+    .input-field {
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      transition: border-color 0.15s ease;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #FF5722;
+    }
+
+    /* Compact Vietnamese License Plate Badge */
+    .vn-plate {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #FFFFFF;
+      color: #0F172A;
+      border: 1.5px solid #1E293B;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    .vn-plate::before {
+      content: '';
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background-color: #FF5722;
+      display: inline-block;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #FF5722;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-signal selection:text-white">
+
+  <!-- ===================================================================== -->
+  <!-- PRODUCTION HEADER -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 card-surface border-t-0 border-x-0 backdrop-blur-md bg-opacity-95">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Left: Brand Identity -->
+      <div class="flex items-center gap-6">
+        <a href="#" onclick="resetToHome(event)" class="flex items-center gap-3 group">
+          <div class="w-9 h-9 rounded-lg bg-signal flex items-center justify-center text-white shadow-sm">
+            <i class="fa-solid fa-car-wrench text-base"></i>
+          </div>
+          <div>
+            <div class="font-display font-bold text-base tracking-tight leading-none flex items-center gap-2">
+              <span>XYZ AUTO</span>
+              <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-signal/15 text-signal font-semibold">Service Center</span>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)] mt-0.5 hidden sm:block">Trung tâm Bảo dưỡng & Sửa chữa Ô tô</p>
+          </div>
+        </a>
+
+        <!-- Contextual Navigation (Changes cleanly by logged-in Role) -->
+        <nav id="headerContextualNav" class="hidden md:flex items-center gap-1">
+          <!-- Populated dynamically based on role -->
+        </nav>
+      </div>
+
+      <!-- Right: Theme Toggle & User Profile Dropdown -->
+      <div class="flex items-center gap-2.5">
+        <!-- Theme Switcher -->
+        <button onclick="toggleTheme()" class="w-9 h-9 rounded-lg card-elevated flex items-center justify-center hover:border-signal/60 transition" title="Đổi giao diện Sáng / Tối">
+          <i class="fa-solid fa-sun text-amber-400 text-sm" id="themeIcon"></i>
+        </button>
+
+        <!-- User Account & Quick Role Switch Dropdown -->
+        <div class="relative" id="userDropdownContainer">
+          <button onclick="toggleUserDropdown(event)" class="card-elevated px-3 py-1.5 rounded-lg flex items-center gap-2.5 hover:border-signal/60 transition">
+            <div id="headerAvatar" class="w-7 h-7 rounded-md bg-signal/20 text-signal font-mono font-bold text-xs flex items-center justify-center">
+              MQ
+            </div>
+            <div class="text-left hidden sm:block">
+              <div id="headerUserName" class="text-xs font-semibold leading-none">Nguyễn Minh Quân</div>
+              <div id="headerUserRoleBadge" class="text-[10px] font-mono text-[var(--text-muted)] mt-0.5">Khách hàng</div>
+            </div>
+            <i class="fa-solid fa-chevron-down text-[10px] text-[var(--text-muted)] ml-0.5"></i>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-72 card-surface rounded-xl shadow-2xl p-2 z-50 border border-[var(--border-color)]">
+            <div class="px-3 py-2 border-b border-[var(--border-color)]">
+              <div class="text-[11px] font-mono uppercase text-[var(--text-muted)]">Tài khoản đang đăng nhập</div>
+              <div id="dropdownActiveName" class="text-sm font-bold mt-0.5">Nguyễn Minh Quân</div>
+              <div id="dropdownActiveMeta" class="text-xs font-mono text-signal">51K-889.26 • Mazda CX-5</div>
+            </div>
+
+            <div class="py-1.5">
+              <div class="px-3 py-1 text-[10px] font-mono uppercase text-[var(--text-muted)]">Chuyển nhanh tài khoản</div>
+              <div id="dropdownAccountList" class="space-y-0.5 mt-1">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <div class="pt-1.5 border-t border-[var(--border-color)] flex items-center justify-between gap-1">
+              <button onclick="openLoginModal()" class="flex-1 px-3 py-2 rounded-lg text-xs font-semibold card-elevated hover:border-signal text-center transition">
+                <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Đăng nhập khác
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Contextual Navigation Bar -->
+    <div id="mobileContextualNav" class="md:hidden border-t border-[var(--border-color)] px-4 py-2 flex items-center gap-1.5 overflow-x-auto">
+      <!-- Populated dynamically -->
+    </div>
+  </header>
+
+
+  <!-- ===================================================================== -->
+  <!-- MAIN WORKSPACE -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ===================================================================== -->
+    <!-- 1. GIAO DIỆN KHÁCH HÀNG (CUSTOMER VIEW) -->
+    <!-- ===================================================================== -->
+    <section id="view-CUSTOMER" class="space-y-6">
+
+      <!-- TAB 1: ĐẶT LỊCH BẢO DƯỠNG (UNIFIED BOOKING FLOW) -->
+      <div id="custTabContent-BOOKING" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left/Main Column (7 Cols): Bước 1 (Chọn dịch vụ) + Bước 2 (Chọn ngày & giờ) -->
+        <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+          
+          <!-- BƯỚC 1: CHỌN DỊCH VỤ -->
+          <div class="card-surface rounded-xl p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 class="font-display font-bold text-base flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-signal text-white font-mono text-xs flex items-center justify-center">1</span>
+                  <span>Chọn dịch vụ bảo dưỡng & sửa chữa</span>
+                </h2>
+              </div>
+              <div class="relative w-full sm:w-60">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs"></i>
+                <input type="text" id="serviceSearchInput" oninput="renderCustomerServices()" placeholder="Tìm dịch vụ..." class="w-full pl-8 pr-3 py-1.5 rounded-lg input-field text-xs" />
+              </div>
+            </div>
+
+            <!-- Category Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="serviceCategoryPills"></div>
+
+            <!-- Clean Service Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="customerServiceGrid"></div>
+          </div>
+
+          <!-- BƯỚC 2: CHỌN NGÀY & KHUNG GIỜ -->
+          <div class="card-surface rounded-xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="font-display font-bold text-base flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-signal text-white font-mono text-xs flex items-center justify-center">2</span>
+                <span>Chọn ngày & khung giờ tiếp nhận</span>
+              </h2>
+              <span class="text-xs font-mono text-[var(--text-muted)]" id="customerCapacityHint">Định mức: 3 xe / khung giờ</span>
+            </div>
+
+            <!-- Date Selector Row -->
+            <div class="grid grid-cols-3 gap-2.5">
+              <button type="button" onclick="selectBookingDateOffset(0)" id="dateBtn-0" class="py-2 px-3 rounded-lg text-xs font-semibold border transition text-left flex items-center justify-between">
+                <span>Hôm nay</span>
+                <span id="dateLabel-0" class="font-mono font-bold">--</span>
+              </button>
+              <button type="button" onclick="selectBookingDateOffset(1)" id="dateBtn-1" class="py-2 px-3 rounded-lg text-xs font-semibold border transition text-left flex items-center justify-between">
+                <span>Ngày mai</span>
+                <span id="dateLabel-1" class="font-mono font-bold">--</span>
+              </button>
+              <input type="date" id="bookDateInput" onchange="onCustomBookingDateChange(this.value)" class="w-full px-3 py-2 rounded-lg input-field text-xs font-mono cursor-pointer" />
+            </div>
+
+            <!-- 8 Time-Slot Grid (08:00 - 16:00) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="bookingTimeSlotGrid"></div>
+          </div>
+
+        </div>
+
+        <!-- Right Sticky Summary Panel (5 Cols): Bước 3 (Thông tin xe & Xác nhận) -->
+        <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-22">
+          <div class="card-surface rounded-xl p-5 space-y-5 border-t-4 border-t-signal">
+            <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+              <h2 class="font-display font-bold text-base flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-signal text-white font-mono text-xs flex items-center justify-center">3</span>
+                <span>Thông tin xe & Liên hệ</span>
+              </h2>
+              <div class="flex gap-1">
+                <button type="button" onclick="fillPresetCar(0)" class="text-[11px] font-mono px-2 py-0.5 rounded card-elevated hover:border-signal transition" title="Điền nhanh xe đã lưu">
+                  51K-889.26
+                </button>
+                <button type="button" onclick="fillPresetCar(1)" class="text-[11px] font-mono px-2 py-0.5 rounded card-elevated hover:border-signal transition" title="Điền nhanh xe đã lưu">
+                  51G-402.15
+                </button>
+              </div>
+            </div>
+
+            <!-- Vehicle & Contact Inputs -->
+            <div class="space-y-3 text-xs">
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-[var(--text-muted)] mb-1">Họ và tên *</label>
+                  <input type="text" id="bookCustomerName" class="w-full px-3 py-2 rounded-lg input-field font-medium" placeholder="Nguyễn Minh Quân" />
+                </div>
+                <div>
+                  <label class="block text-[var(--text-muted)] mb-1">Số điện thoại *</label>
+                  <input type="text" id="bookCustomerPhone" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="0909888777" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-12 gap-2.5">
+                <div class="col-span-5">
+                  <label class="block text-[var(--text-muted)] mb-1">Biển số xe *</label>
+                  <input type="text" id="bookLicensePlate" class="w-full px-3 py-2 rounded-lg input-field font-mono font-bold uppercase text-amber-400" placeholder="51K-889.26" />
+                </div>
+                <div class="col-span-7">
+                  <label class="block text-[var(--text-muted)] mb-1">Dòng xe *</label>
+                  <input type="text" id="bookCarModel" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Mazda CX-5 2023" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[var(--text-muted)] mb-1">Ghi chú tình trạng xe (tùy chọn)</label>
+                <textarea id="bookSymptomNote" rows="2" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Mô tả triệu chứng hoặc yêu cầu kiểm tra..."></textarea>
+              </div>
+            </div>
+
+            <!-- Selected Services & Time Breakdown -->
+            <div class="pt-3 border-t border-[var(--border-color)] space-y-2.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-[var(--text-muted)]">Dịch vụ đã chọn (<span id="selectedSrvCount">0</span>)</span>
+                <button type="button" onclick="clearSelectedServices()" class="text-[11px] text-[var(--text-muted)] hover:text-rose-400 transition">Xóa chọn</button>
+              </div>
+
+              <div id="selectedServicesList" class="space-y-1.5 max-h-36 overflow-y-auto pr-1"></div>
+
+              <!-- Summary Bar -->
+              <div class="p-3 rounded-lg card-elevated space-y-1.5 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[var(--text-muted)]">Thời gian hẹn:</span>
+                  <span class="font-mono font-bold text-amber-400" id="summaryDateTimeDisplay">--</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-[var(--text-muted)]">Tổng thời lượng dự kiến:</span>
+                  <span class="font-mono font-semibold" id="bookingTotalDuration">0 phút</span>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-[var(--border-color)]">
+                  <span class="font-semibold">Chi phí tham khảo:</span>
+                  <span class="font-mono text-base font-bold text-signal" id="bookingTotalPrice">0 ₫</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Primary CTA -->
+            <button type="button" onclick="submitCustomerBooking()" class="w-full py-3 px-4 rounded-lg bg-signal hover:bg-signal-hover text-white font-display font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-calendar-check"></i>
+              <span>Xác nhận Đặt lịch</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB 2: LỊCH HẸN CỦA TÔI (TRACKING & SELF-SERVICE) -->
+      <div id="custTabContent-TRACKING" class="hidden space-y-4">
+        <div class="card-surface rounded-xl p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="font-display font-bold text-lg">Tra cứu & Quản lý Lịch hẹn</h2>
+              <p class="text-xs text-[var(--text-muted)]">Theo dõi tiến độ thực hiện dịch vụ theo thời gian thực hoặc chủ động đổi/hủy lịch hẹn</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="inline-flex p-1 rounded-lg card-elevated text-xs">
+                <button onclick="setCustomerTrackScope('MINE')" id="trackScope-MINE" class="px-3 py-1 rounded-md font-semibold bg-signal text-white transition">
+                  Của tôi
+                </button>
+                <button onclick="setCustomerTrackScope('ALL')" id="trackScope-ALL" class="px-3 py-1 rounded-md font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">
+                  Tất cả lịch hẹn
+                </button>
+              </div>
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs"></i>
+                <input type="text" id="customerTrackSearch" oninput="renderCustomerTrackingList()" placeholder="Biển số, SĐT, mã hẹn..." class="pl-8 pr-3 py-1.5 rounded-lg input-field text-xs font-mono w-52" />
+              </div>
+            </div>
+          </div>
+
+          <div id="customerTrackingContainer" class="space-y-3"></div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================================== -->
+    <!-- 2. GIAO DIỆN NHÂN VIÊN TIẾP NHẬN (SERVICE ADVISOR VIEW) -->
+    <!-- ===================================================================== -->
+    <section id="view-STAFF" class="hidden space-y-5">
+      
+      <!-- 1. Live Slot Capacity Bar -->
+      <div class="card-surface rounded-xl p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <h2 class="font-display font-bold text-sm">Công suất Khung giờ Tiếp nhận</h2>
+            <span class="text-xs font-mono text-[var(--text-muted)]" id="staffMaxCapBadge">(Tối đa 3 xe/khung giờ)</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="setStaffFilterDateOffset(0)" id="staffDateBtn-0" class="px-2.5 py-1 rounded-md text-xs font-mono font-semibold border transition">Hôm nay</button>
+            <button onclick="setStaffFilterDateOffset(1)" id="staffDateBtn-1" class="px-2.5 py-1 rounded-md text-xs font-mono font-semibold border transition">Ngày mai</button>
+            <input type="date" id="staffFilterDate" onchange="onStaffDateInputChange(this.value)" class="px-2.5 py-1 rounded-md input-field text-xs font-mono" />
+            <button onclick="clearStaffSlotFilter()" id="clearSlotFilterBtn" class="hidden px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-mono">
+              Bỏ lọc giờ <i class="fa-solid fa-xmark ml-1"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2" id="staffCapacityStrip"></div>
+      </div>
+
+      <!-- 2. Appointment Management List -->
+      <div class="card-surface rounded-xl p-4 space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+          <!-- Status Filter Tabs -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="staffStatusTabs"></div>
+
+          <!-- Search & Walk-in CTA -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 sm:w-64">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs"></i>
+              <input type="text" id="staffSearchInput" oninput="renderStaffAppointments()" placeholder="Tìm biển số, SĐT, tên khách..." class="w-full pl-8 pr-3 py-1.5 rounded-lg input-field text-xs font-mono" />
+            </div>
+            <button onclick="openWalkInModal()" class="px-3.5 py-1.5 rounded-lg bg-signal hover:bg-signal-hover text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition shrink-0">
+              <i class="fa-solid fa-plus"></i>
+              <span>Tạo lịch tiếp nhận</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="staffAppointmentsContainer" class="space-y-2.5"></div>
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================================== -->
+    <!-- 3. GIAO DIỆN QUẢN LÝ (MANAGER VIEW) -->
+    <!-- ===================================================================== -->
+    <section id="view-MANAGER" class="hidden space-y-6">
+
+      <!-- SUB-VIEW 1: TỔNG QUAN & THỐNG KÊ -->
+      <div id="mgrTabContent-ANALYTICS" class="space-y-6">
+        <!-- 4 KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="managerKpiGrid"></div>
+
+        <!-- 2 Visual Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left 7 Cols: Biểu đồ phân bổ lịch hẹn theo khung giờ -->
+          <div class="lg:col-span-7 card-surface rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-display font-bold text-sm">Phân bổ Lịch hẹn theo Khung giờ</h3>
+                <p class="text-xs text-[var(--text-muted)]">Tải thực tế so với định mức năng lực khoang sửa chữa</p>
+              </div>
+              <span class="text-xs font-mono text-[var(--text-muted)]" id="chartDateBadge">Hôm nay</span>
+            </div>
+            <div id="slotUtilizationChart"></div>
+          </div>
+
+          <!-- Right 5 Cols: Cơ cấu trạng thái lịch hẹn -->
+          <div class="lg:col-span-5 card-surface rounded-xl p-5 space-y-4">
+            <div>
+              <h3 class="font-display font-bold text-sm">Tỷ lệ theo Trạng thái Lịch hẹn</h3>
+              <p class="text-xs text-[var(--text-muted)]">Thống kê toàn bộ lịch hẹn trên hệ thống</p>
+            </div>
+            <div id="statusDistributionPanel" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- Thống kê theo dịch vụ -->
+        <div class="card-surface rounded-xl p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="font-display font-bold text-sm">Thống kê Lượt đặt & Doanh thu Dự kiến theo Dịch vụ</h3>
+            </div>
+            <div class="text-xs font-mono text-[var(--text-muted)]">
+              Tổng doanh thu dự kiến: <strong class="text-emerald-400 text-sm" id="analyticsTotalRevenue">0 ₫</strong>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] font-mono text-[11px] uppercase">
+                  <th class="py-2.5 px-3">Mã DV</th>
+                  <th class="py-2.5 px-3">Tên dịch vụ</th>
+                  <th class="py-2.5 px-3">Nhóm dịch vụ</th>
+                  <th class="py-2.5 px-3 text-center">Thời lượng</th>
+                  <th class="py-2.5 px-3 text-right">Đơn giá</th>
+                  <th class="py-2.5 px-3 text-center">Lượt đặt</th>
+                  <th class="py-2.5 px-3 text-right">Doanh thu dự kiến</th>
+                </tr>
+              </thead>
+              <tbody id="serviceAnalyticsTableBody" class="divide-y divide-[var(--border-color)]"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 2: DANH MỤC DỊCH VỤ -->
+      <div id="mgrTabContent-SERVICES" class="hidden space-y-4">
+        <div class="card-surface rounded-xl p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="font-display font-bold text-base">Danh mục Dịch vụ Bảo dưỡng & Sửa chữa</h2>
+              <p class="text-xs text-[var(--text-muted)]">Quản lý thời lượng dự kiến, đơn giá tham khảo và trạng thái hiển thị</p>
+            </div>
+            <button onclick="openServiceEditorModal()" class="px-3.5 py-2 rounded-lg bg-signal hover:bg-signal-hover text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition">
+              <i class="fa-solid fa-plus"></i>
+              <span>Thêm dịch vụ mới</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] font-mono text-[11px] uppercase">
+                  <th class="py-2.5 px-3">Mã</th>
+                  <th class="py-2.5 px-3">Tên dịch vụ & Hạng mục kỹ thuật</th>
+                  <th class="py-2.5 px-3">Nhóm</th>
+                  <th class="py-2.5 px-3 text-center">Thời lượng</th>
+                  <th class="py-2.5 px-3 text-right">Giá tham khảo</th>
+                  <th class="py-2.5 px-3 text-center">Trạng thái</th>
+                  <th class="py-2.5 px-3 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="managerServiceTableBody" class="divide-y divide-[var(--border-color)]"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 3: NĂNG LỰC PHỤC VỤ & TÀI KHOẢN -->
+      <div id="mgrTabContent-SETTINGS" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Left 5 Cols: Cấu hình năng lực phục vụ -->
+          <div class="lg:col-span-5 space-y-4">
+            <div class="card-surface rounded-xl p-5 space-y-4">
+              <div>
+                <h3 class="font-display font-bold text-base">Cấu hình Năng lực Phục vụ</h3>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                  Số lượng xe tối đa nhận đồng thời trong mỗi khung giờ (áp dụng trực tiếp cho cổng đặt lịch và bàn tiếp nhận).
+                </p>
+              </div>
+
+              <div class="card-elevated rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <div class="text-[11px] font-mono text-[var(--text-muted)] uppercase">Định mức mỗi khung giờ</div>
+                  <div class="text-2xl font-mono font-bold text-signal mt-0.5"><span id="mgrCurrentMaxCap">3</span> xe / khung giờ</div>
+                  <div class="text-xs text-emerald-400 font-mono mt-0.5">Tổng công suất: <span id="mgrDailyTotalCap">24</span> lượt xe/ngày</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="adjustMaxCapacity(-1)" class="w-10 h-10 rounded-lg card-surface hover:border-signal text-sm font-mono font-bold flex items-center justify-center transition">
+                    <i class="fa-solid fa-minus"></i>
+                  </button>
+                  <button onclick="adjustMaxCapacity(1)" class="w-10 h-10 rounded-lg card-surface hover:border-signal text-sm font-mono font-bold flex items-center justify-center transition">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="text-xs font-semibold text-[var(--text-muted)]">Danh sách Khoang Kỹ thuật (Service Bays)</div>
+                <div id="workshopBaysList" class="space-y-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right 7 Cols: Quản lý tài khoản & Khôi phục dữ liệu -->
+          <div class="lg:col-span-7 space-y-4">
+            <div class="card-surface rounded-xl p-5 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-display font-bold text-base">Quản lý Tài khoản Hệ thống</h3>
+                  <p class="text-xs text-[var(--text-muted)]">Phân quyền Khách hàng, Cố vấn dịch vụ và Quản lý</p>
+                </div>
+                <button onclick="openAddUserModal()" class="px-3 py-1.5 rounded-lg bg-signal hover:bg-signal-hover text-white text-xs font-semibold transition">
+                  <i class="fa-solid fa-user-plus mr-1"></i>Thêm tài khoản
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] font-mono text-[11px] uppercase">
+                      <th class="py-2.5 px-3">Họ và tên</th>
+                      <th class="py-2.5 px-3">Số điện thoại</th>
+                      <th class="py-2.5 px-3">Vai trò</th>
+                      <th class="py-2.5 px-3">Thông tin gắn kèm</th>
+                      <th class="py-2.5 px-3 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rbacAccountsTableBody" class="divide-y divide-[var(--border-color)]"></tbody>
+                </table>
+              </div>
+
+              <div class="pt-4 border-t border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2">
+                <div class="text-xs text-[var(--text-muted)]">
+                  Dữ liệu được lưu trữ tự động trên trình duyệt (<code class="font-mono">localStorage</code>).
+                </div>
+                <button onclick="resetDemoData()" class="px-3 py-1.5 rounded-lg card-elevated hover:border-rose-500/50 hover:text-rose-400 text-xs font-medium transition">
+                  <i class="fa-solid fa-rotate-left mr-1"></i>Khôi phục dữ liệu mặc định
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- CLEAN PRODUCTION FOOTER -->
+  <!-- ===================================================================== -->
+  <footer class="mt-auto border-t border-[var(--border-color)] py-4 px-4 sm:px-6 text-xs text-[var(--text-muted)] card-surface">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="font-display font-bold text-[var(--text-main)]">XYZ AUTO SERVICE CENTER</span>
+        <span>•</span>
+        <span>Giờ làm việc: 08:00 – 17:30 (Thứ 2 – Thứ 7)</span>
+      </div>
+      <div class="font-mono text-[11px]">
+        Hotline Hỗ trợ Kỹ thuật: <strong class="text-[var(--text-main)]">1900 6868</strong>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ===================================================================== -->
+  <!-- MODALS -->
+  <!-- ===================================================================== -->
+
+  <!-- 1. Modal: Chi tiết Kỹ thuật Dịch vụ -->
+  <div id="modalServiceDetail" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-start justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+        <div>
+          <span id="detailSrvCode" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-signal/15 text-signal">SRV-01</span>
+          <h3 id="detailSrvName" class="font-display font-bold text-base mt-1">Tên dịch vụ</h3>
+        </div>
+        <button onclick="closeModal('modalServiceDetail')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p id="detailSrvDesc" class="text-xs text-[var(--text-muted)] leading-relaxed"></p>
+      <div class="grid grid-cols-3 gap-2 font-mono text-xs">
+        <div class="p-2.5 rounded-lg card-elevated">
+          <div class="text-[10px] text-[var(--text-muted)]">THỜI LƯỢNG</div>
+          <div id="detailSrvDuration" class="font-bold text-sm mt-0.5">60 phút</div>
+        </div>
+        <div class="p-2.5 rounded-lg card-elevated">
+          <div class="text-[10px] text-[var(--text-muted)]">GIÁ THAM KHẢO</div>
+          <div id="detailSrvPrice" class="font-bold text-signal text-sm mt-0.5">1.450.000 ₫</div>
+        </div>
+        <div class="p-2.5 rounded-lg card-elevated">
+          <div class="text-[10px] text-[var(--text-muted)]">BẢO HÀNH</div>
+          <div id="detailSrvWarranty" class="font-bold text-emerald-400 text-sm mt-0.5">6 tháng</div>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold mb-1.5">Hạng mục thực hiện tiêu chuẩn:</div>
+        <ul id="detailSrvChecklist" class="space-y-1 text-xs text-[var(--text-muted)]"></ul>
+      </div>
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalServiceDetail')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Đóng</button>
+        <button id="detailSrvSelectBtn" class="px-3.5 py-1.5 rounded-lg bg-signal text-white text-xs font-semibold hover:bg-signal-hover transition">
+          Chọn dịch vụ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Modal: Đổi lịch hẹn (Reschedule) -->
+  <div id="modalReschedule" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 class="font-display font-bold text-base">Thay đổi Lịch hẹn</h3>
+        <button onclick="closeModal('modalReschedule')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="rescheduleApptId" />
+      <div id="rescheduleCurrentSummary" class="p-3 rounded-lg card-elevated text-xs"></div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-semibold">Chọn ngày hẹn mới</label>
+        <input type="date" id="rescheduleDateInput" onchange="renderRescheduleSlots()" class="w-full px-3 py-2 rounded-lg input-field text-xs font-mono" />
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-semibold">Chọn khung giờ còn trống</label>
+        <div class="grid grid-cols-4 gap-2" id="rescheduleSlotGrid"></div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-semibold">Dịch vụ đăng ký</label>
+        <div id="rescheduleServiceCheckboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-1"></div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalReschedule')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Hủy</button>
+        <button onclick="confirmRescheduleBooking()" class="px-4 py-1.5 rounded-lg bg-signal text-white text-xs font-semibold hover:bg-signal-hover transition">
+          Lưu thay đổi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Modal: Hủy lịch hẹn / Từ chối tiếp nhận -->
+  <div id="modalCancelOrReject" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 id="cancelModalTitle" class="font-display font-bold text-base">Xác nhận Hủy Lịch Hẹn</h3>
+        <button onclick="closeModal('modalCancelOrReject')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="cancelApptId" />
+      <input type="hidden" id="cancelActionMode" />
+
+      <p id="cancelModalDesc" class="text-xs text-[var(--text-muted)] leading-relaxed"></p>
+
+      <div class="space-y-2">
+        <div id="cancelQuickReasons" class="flex flex-wrap gap-1.5"></div>
+        <textarea id="cancelReasonInput" rows="2" class="w-full px-3 py-2 rounded-lg input-field text-xs" placeholder="Nhập lý do..."></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalCancelOrReject')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Đóng</button>
+        <button onclick="confirmCancelOrReject()" class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition">
+          Xác nhận
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Modal: Duyệt & Gán Khoang Sửa chữa -->
+  <div id="modalStaffConfirm" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 class="font-display font-bold text-base">Duyệt Lịch hẹn & Gán Khoang</h3>
+        <button onclick="closeModal('modalStaffConfirm')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="staffConfirmApptId" />
+      <div id="staffConfirmSummary" class="p-3 rounded-lg card-elevated text-xs"></div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Khoang dịch vụ</label>
+          <select id="staffConfirmBay" class="w-full px-3 py-2 rounded-lg input-field font-mono">
+            <option value="Khoang 01 - Bảo dưỡng nhanh">Khoang 01 - Bảo dưỡng nhanh</option>
+            <option value="Khoang 02 - Cầu nâng 2 trụ">Khoang 02 - Cầu nâng 2 trụ</option>
+            <option value="Khoang 03 - Chẩn đoán & Động cơ">Khoang 03 - Chẩn đoán & Động cơ</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Kỹ thuật viên phụ trách</label>
+          <select id="staffConfirmTech" class="w-full px-3 py-2 rounded-lg input-field">
+            <option value="KTV. Phạm Văn Hùng">KTV. Phạm Văn Hùng (Máy - Gầm)</option>
+            <option value="KTV. Đỗ Minh Tuấn">KTV. Đỗ Minh Tuấn (Bảo dưỡng - Phanh)</option>
+            <option value="KTV. Võ Thành Đạt">KTV. Võ Thành Đạt (Điện - Điều hòa)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Ghi chú điều phối</label>
+          <input type="text" id="staffConfirmNote" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Ghi chú cho khách hàng hoặc kỹ thuật viên..." />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalStaffConfirm')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Đóng</button>
+        <button onclick="submitStaffConfirm()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+          Xác nhận duyệt lịch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Modal: Tạo lịch tiếp nhận (Walk-in / Điện thoại) -->
+  <div id="modalWalkIn" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 class="font-display font-bold text-base">Tạo Lịch Tiếp nhận Trực tiếp / Điện thoại</h3>
+        <button onclick="closeModal('modalWalkIn')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Tên khách hàng *</label>
+          <input type="text" id="walkinName" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Phạm Gia Huy" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Số điện thoại *</label>
+          <input type="text" id="walkinPhone" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="0912345678" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Biển số xe *</label>
+          <input type="text" id="walkinPlate" class="w-full px-3 py-2 rounded-lg input-field font-mono uppercase font-bold text-amber-400" placeholder="30K-686.88" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Dòng xe *</label>
+          <input type="text" id="walkinModel" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Toyota Corolla Cross" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Ngày hẹn *</label>
+          <input type="date" id="walkinDate" onchange="populateWalkinSlots()" class="w-full px-3 py-2 rounded-lg input-field font-mono" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Khung giờ còn trống *</label>
+          <select id="walkinSlot" class="w-full px-3 py-2 rounded-lg input-field font-mono"></select>
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs text-[var(--text-muted)]">Chọn dịch vụ yêu cầu *</label>
+        <div id="walkinServiceList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-1"></div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalWalkIn')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Hủy</button>
+        <button onclick="submitWalkInBooking()" class="px-4 py-1.5 rounded-lg bg-signal text-white text-xs font-semibold hover:bg-signal-hover transition">
+          Tạo & Duyệt lịch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Modal: Thêm / Sửa Dịch vụ -->
+  <div id="modalServiceEditor" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 id="srvEditorTitle" class="font-display font-bold text-base">Thông tin Dịch vụ</h3>
+        <button onclick="closeModal('modalServiceEditor')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="editSrvId" />
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Mã dịch vụ *</label>
+          <input type="text" id="editSrvCode" class="w-full px-3 py-2 rounded-lg input-field font-mono uppercase" placeholder="SRV-07" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Nhóm dịch vụ *</label>
+          <select id="editSrvCategory" class="w-full px-3 py-2 rounded-lg input-field">
+            <option value="Bảo dưỡng định kỳ">Bảo dưỡng định kỳ</option>
+            <option value="Thay dầu & Chất lỏng">Thay dầu & Chất lỏng</option>
+            <option value="Hệ thống phanh & Gầm">Hệ thống phanh & Gầm</option>
+            <option value="Sửa chữa động cơ">Sửa chữa động cơ</option>
+            <option value="Điện & Điều hòa">Điện & Điều hòa</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[var(--text-muted)] mb-1">Tên dịch vụ *</label>
+          <input type="text" id="editSrvName" class="w-full px-3 py-2 rounded-lg input-field font-semibold" placeholder="Vệ sinh buồng đốt bằng khí Hydro" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Thời lượng (phút) *</label>
+          <input type="number" id="editSrvDuration" step="15" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="45" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Giá tham khảo (VNĐ) *</label>
+          <input type="number" id="editSrvPrice" step="50000" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="650000" />
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[var(--text-muted)] mb-1">Hạng mục kỹ thuật (ngăn cách bằng dấu ;)</label>
+          <textarea id="editSrvChecklist" rows="3" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Kiểm tra lọc gió; Làm sạch muội than; Đo kiểm khí thải"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalServiceEditor')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Hủy</button>
+        <button onclick="saveServiceFromModal()" class="px-4 py-1.5 rounded-lg bg-signal text-white text-xs font-semibold hover:bg-signal-hover transition">
+          Lưu dịch vụ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Modal: Đăng nhập Hệ thống (Production Login Modal) -->
+  <div id="modalLogin" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 class="font-display font-bold text-base">Đăng nhập Hệ thống</h3>
+        <button onclick="closeModal('modalLogin')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Số điện thoại hoặc Mã nhân viên</label>
+          <input type="text" id="loginPhoneInput" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="0909888777" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Mật khẩu</label>
+          <input type="password" id="loginPasswordInput" value="123456" class="w-full px-3 py-2 rounded-lg input-field font-mono" />
+        </div>
+        <button onclick="handlePhoneLogin()" class="w-full py-2.5 rounded-lg bg-signal hover:bg-signal-hover text-white font-semibold transition">
+          Đăng nhập
+        </button>
+      </div>
+
+      <div class="pt-3 border-t border-[var(--border-color)] space-y-2">
+        <div class="text-[11px] font-mono text-[var(--text-muted)]">Hoặc chọn nhanh tài khoản có sẵn:</div>
+        <div id="modalLoginQuickList" class="space-y-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Modal: Thêm Tài khoản Mới -->
+  <div id="modalAddUser" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="card-surface rounded-xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+        <h3 class="font-display font-bold text-base">Thêm Tài khoản Mới</h3>
+        <button onclick="closeModal('modalAddUser')" class="w-7 h-7 rounded-lg card-elevated flex items-center justify-center text-[var(--text-muted)]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Họ và tên *</label>
+          <input type="text" id="newUserName" class="w-full px-3 py-2 rounded-lg input-field" placeholder="Lê Thị Mai Anh" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Số điện thoại đăng nhập *</label>
+          <input type="text" id="newUserPhone" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="0933555777" />
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Vai trò *</label>
+          <select id="newUserRole" class="w-full px-3 py-2 rounded-lg input-field">
+            <option value="CUSTOMER">Khách hàng</option>
+            <option value="STAFF">Cố vấn dịch vụ</option>
+            <option value="MANAGER">Quản lý</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[var(--text-muted)] mb-1">Thông tin xe / Bộ phận *</label>
+          <input type="text" id="newUserMeta" class="w-full px-3 py-2 rounded-lg input-field font-mono" placeholder="30H-998.12 • Hyundai SantaFe" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+        <button onclick="closeModal('modalAddUser')" class="px-3.5 py-1.5 rounded-lg card-elevated text-xs font-semibold">Hủy</button>
+        <button onclick="saveNewAccount()" class="px-4 py-1.5 rounded-lg bg-signal text-white text-xs font-semibold">Tạo tài khoản</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION LOGIC -->
+  <!-- ===================================================================== -->
+  <script>
+    // 8 standard slots from 08:00 to 16:00
+    const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
+
+    const ROLE_NAMES = {
+      CUSTOMER: 'Khách hàng',
+      STAFF: 'Cố vấn dịch vụ',
+      MANAGER: 'Quản lý'
+    };
+
+    const STATUS_META = {
+      PENDING: {
+        label: 'Chờ xác nhận',
+        badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        countsCapacity: true,
+        step: 1
+      },
+      CONFIRMED: {
+        label: 'Đã xác nhận',
+        badgeClass: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+        countsCapacity: true,
+        step: 2
+      },
+      IN_PROGRESS: {
+        label: 'Đang thực hiện',
+        badgeClass: 'bg-signal/15 text-signal border-signal/30',
+        countsCapacity: true,
+        step: 3
+      },
+      COMPLETED: {
+        label: 'Hoàn tất',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        countsCapacity: true,
+        step: 4
+      },
+      CANCELLED: {
+        label: 'Đã hủy',
+        badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        countsCapacity: false,
+        step: 0
+      },
+      REJECTED: {
+        label: 'Từ chối',
+        badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        countsCapacity: false,
+        step: 0
+      },
+      NO_SHOW: {
+        label: 'Vắng mặt',
+        badgeClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+        countsCapacity: false,
+        step: 0
+      }
+    };
+
+    function getFormattedDateOffset(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatVNDate(isoDate) {
+      if (!isoDate) return '';
+      const parts = isoDate.split('-');
+      if (parts.length !== 3) return isoDate;
+      const today = getFormattedDateOffset(0);
+      const tomorrow = getFormattedDateOffset(1);
+      const label = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      if (isoDate === today) return `${label} (Hôm nay)`;
+      if (isoDate === tomorrow) return `${label} (Ngày mai)`;
+      return label;
+    }
+
+    function formatShortVNDate(isoDate) {
+      if (!isoDate) return '';
+      const parts = isoDate.split('-');
+      return `${parts[2]}/${parts[1]}`;
+    }
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('vi-VN').format(amount || 0) + ' ₫';
+    }
+
+    function createInitialState() {
+      const today = getFormattedDateOffset(0);
+      const tomorrow = getFormattedDateOffset(1);
+
+      return {
+        maxCapacityPerSlot: 3,
+        currentRole: 'CUSTOMER',
+        activeAccountId: 'ACC-01',
+        customerPresetCars: [
+          { plate: '51K-889.26', model: 'Mazda CX-5 2.0 Premium', owner: 'Nguyễn Minh Quân', phone: '0909888777' },
+          { plate: '51G-402.15', model: 'Honda Civic RS Turbo', owner: 'Nguyễn Minh Quân', phone: '0909888777' }
+        ],
+        accounts: [
+          { id: 'ACC-01', name: 'Nguyễn Minh Quân', role: 'CUSTOMER', avatar: 'MQ', meta: '51K-889.26 • Mazda CX-5', phone: '0909888777' },
+          { id: 'ACC-02', name: 'Lê Hoàng Nam', role: 'STAFF', avatar: 'HN', meta: 'Cố vấn Dịch vụ • Ca chính', phone: '0918222333' },
+          { id: 'ACC-03', name: 'Trần Quốc Bảo', role: 'MANAGER', avatar: 'QB', meta: 'Quản lý Xưởng dịch vụ', phone: '0988111999' },
+          { id: 'ACC-04', name: 'Vũ Hoàng Yến', role: 'CUSTOMER', avatar: 'HY', meta: '30K-512.88 • Mercedes C200', phone: '0933444555' }
+        ],
+        services: [
+          {
+            id: 'SRV-01',
+            code: 'SRV-01',
+            name: 'Bảo dưỡng định kỳ cấp 10.000km',
+            category: 'Bảo dưỡng định kỳ',
+            duration: 60,
+            price: 1450000,
+            warranty: '6 tháng / 10.000km',
+            active: true,
+            description: 'Bảo dưỡng tiêu chuẩn 28 hạng mục giúp động cơ, hệ thống treo và phanh vận hành ổn định, an toàn.',
+            checklist: [
+              'Thay dầu máy & kiểm tra lọc dầu động cơ',
+              'Vệ sinh lọc gió động cơ & lọc gió điều hòa',
+              'Kiểm tra má phanh 4 bánh & dầu phanh',
+              'Đảo lốp, cân bằng động & kiểm tra áp suất lốp',
+              'Quét lỗi OBD-II toàn bộ hệ thống điện tử'
+            ]
+          },
+          {
+            id: 'SRV-02',
+            code: 'SRV-02',
+            name: 'Thay dầu động cơ Tổng hợp + Lọc dầu',
+            category: 'Thay dầu & Chất lỏng',
+            duration: 45,
+            price: 1150000,
+            warranty: '10.000km',
+            active: true,
+            description: 'Dầu nhớt tổng hợp 100% chuẩn API SP kết hợp lọc dầu chính hãng giúp bôi trơn tối ưu.',
+            checklist: [
+              'Xả sạch nhớt cũ bằng khí nén',
+              'Thay cốc lọc dầu mới chính hãng',
+              'Châm dầu tổng hợp toàn phần đúng dung tích',
+              'Châm bổ sung nước rửa kính & nước làm mát'
+            ]
+          },
+          {
+            id: 'SRV-03',
+            code: 'SRV-03',
+            name: 'Bảo dưỡng Hệ thống Phanh ABS 4 bánh',
+            category: 'Hệ thống phanh & Gầm',
+            duration: 60,
+            price: 850000,
+            warranty: '6 tháng',
+            active: true,
+            description: 'Vệ sinh cùm phanh, kiểm tra đĩa phanh chống rung giật, bôi mỡ chịu nhiệt ắc phanh và đo dầu phanh.',
+            checklist: [
+              'Tháo 4 cụm phanh vệ sinh bằng dung dịch chuyên dụng',
+              'Đo độ dày má phanh và độ đảo đĩa phanh',
+              'Tra mỡ chịu nhiệt vào chốt trượt cùm phanh',
+              'Kiểm tra cảm biến tốc độ bánh xe ABS'
+            ]
+          },
+          {
+            id: 'SRV-04',
+            code: 'SRV-04',
+            name: 'Chẩn đoán & Sửa chữa Động cơ',
+            category: 'Sửa chữa động cơ',
+            duration: 120,
+            price: 2400000,
+            warranty: '12 tháng',
+            active: true,
+            description: 'Xử lý rung giật động cơ, hao nước làm mát, báo đèn Check Engine, vệ sinh kim phun & họng ga.',
+            checklist: [
+              'Đọc dữ liệu động bằng máy chẩn đoán chuyên hãng',
+              'Kiểm tra bugi, bô bin đánh lửa và áp suất buồng đốt',
+              'Vệ sinh kim phun sóng siêu âm & họng ga điện tử',
+              'Kiểm tra rò rỉ hệ thống làm mát'
+            ]
+          },
+          {
+            id: 'SRV-05',
+            code: 'SRV-05',
+            name: 'Cân chỉnh Thước lái & Độ chụm 3D',
+            category: 'Hệ thống phanh & Gầm',
+            duration: 60,
+            price: 750000,
+            warranty: '3 tháng',
+            active: true,
+            description: 'Khắc phục hiện tượng xe nhao lái, lệch vô lăng và mòn lốp không đều bằng máy cân chỉnh 3D.',
+            checklist: [
+              'Kiểm tra độ rơ rô-tuyn lái, càng A và cao su gầm',
+              'Đo góc Camber, Caster, Toe bằng cảm biến 3D',
+              'Hiệu chỉnh độ chụm 4 bánh chuẩn thông số hãng',
+              'Cân bằng động 4 bánh xe'
+            ]
+          },
+          {
+            id: 'SRV-06',
+            code: 'SRV-06',
+            name: 'Vệ sinh Điều hòa Nội soi & Khử khuẩn',
+            category: 'Điện & Điều hòa',
+            duration: 75,
+            price: 950000,
+            warranty: '6 tháng',
+            active: true,
+            description: 'Rửa dàn lạnh bằng camera nội soi không tháo taplo, kiểm tra gas lạnh và khử mùi nội thất.',
+            checklist: [
+              'Đo nhiệt độ cửa gió và áp suất gas lạnh',
+              'Vệ sinh dàn lạnh bằng thiết bị nội soi chuyên dụng',
+              'Kiểm tra quạt gió & lọc gió điều hòa than hoạt tính',
+              'Khử khuẩn khoang cabin bằng Ozone'
+            ]
+          }
+        ],
+        appointments: [
+          {
+            id: 'XYZ-101',
+            customerName: 'Nguyễn Minh Quân',
+            phone: '0909888777',
+            licensePlate: '51G-402.15',
+            carModel: 'Honda Civic RS Turbo',
+            date: today,
+            slot: '08:00',
+            serviceIds: ['SRV-02', 'SRV-03'],
+            totalDuration: 105,
+            totalPrice: 2000000,
+            status: 'IN_PROGRESS',
+            bay: 'Khoang 02 - Cầu nâng 2 trụ',
+            technician: 'KTV. Đỗ Minh Tuấn',
+            note: 'Kiểm tra kỹ phanh sau bên phụ khi rà phanh.',
+            staffNote: 'Đã thay dầu xong, đang bảo dưỡng 4 cụm phanh.'
+          },
+          {
+            id: 'XYZ-102',
+            customerName: 'Đặng Quốc Khánh',
+            phone: '0913666888',
+            licensePlate: '51H-128.90',
+            carModel: 'Toyota Camry 2.5Q',
+            date: today,
+            slot: '08:00',
+            serviceIds: ['SRV-01'],
+            totalDuration: 60,
+            totalPrice: 1450000,
+            status: 'COMPLETED',
+            bay: 'Khoang 01 - Bảo dưỡng nhanh',
+            technician: 'KTV. Phạm Văn Hùng',
+            note: 'Bảo dưỡng định kỳ mốc 40.000km.',
+            staffNote: 'Đã hoàn tất và bàn giao xe.'
+          },
+          // 09:00 Slot Full (3/3)
+          {
+            id: 'XYZ-103',
+            customerName: 'Trần Thanh Tùng',
+            phone: '0903111222',
+            licensePlate: '30K-512.88',
+            carModel: 'Mercedes-Benz C200',
+            date: today,
+            slot: '09:00',
+            serviceIds: ['SRV-01', 'SRV-06'],
+            totalDuration: 135,
+            totalPrice: 2400000,
+            status: 'IN_PROGRESS',
+            bay: 'Khoang 01 - Bảo dưỡng nhanh',
+            technician: 'KTV. Võ Thành Đạt',
+            note: 'Điều hòa có mùi nhẹ khi mới bật.',
+            staffNote: 'Đang vệ sinh nội soi dàn lạnh.'
+          },
+          {
+            id: 'XYZ-104',
+            customerName: 'Lý Gia Hân',
+            phone: '0987654321',
+            licensePlate: '51K-334.19',
+            carModel: 'Hyundai SantaFe',
+            date: today,
+            slot: '09:00',
+            serviceIds: ['SRV-04'],
+            totalDuration: 120,
+            totalPrice: 2400000,
+            status: 'CONFIRMED',
+            bay: 'Khoang 03 - Chẩn đoán & Động cơ',
+            technician: 'KTV. Phạm Văn Hùng',
+            note: 'Báo đèn Check Engine, tăng tốc hơi trễ.',
+            staffNote: 'Đã xếp Khoang 03 lúc 09:00.'
+          },
+          {
+            id: 'XYZ-105',
+            customerName: 'Hoàng Trọng Nghĩa',
+            phone: '0944555666',
+            licensePlate: '79A-368.89',
+            carModel: 'Ford Everest Titanium',
+            date: today,
+            slot: '09:00',
+            serviceIds: ['SRV-05'],
+            totalDuration: 60,
+            totalPrice: 750000,
+            status: 'CONFIRMED',
+            bay: 'Khoang 02 - Cầu nâng 2 trụ',
+            technician: 'KTV. Đỗ Minh Tuấn',
+            note: 'Vô lăng hơi lệch phải.',
+            staffNote: 'Đã giữ cầu cân chỉnh thước lái 3D.'
+          },
+          // 10:00 Slot (2/3)
+          {
+            id: 'XYZ-106',
+            customerName: 'Nguyễn Minh Quân',
+            phone: '0909888777',
+            licensePlate: '51K-889.26',
+            carModel: 'Mazda CX-5 2.0 Premium',
+            date: today,
+            slot: '10:00',
+            serviceIds: ['SRV-01', 'SRV-05'],
+            totalDuration: 120,
+            totalPrice: 2200000,
+            status: 'CONFIRMED',
+            bay: 'Khoang 01 - Bảo dưỡng nhanh',
+            technician: 'KTV. Phạm Văn Hùng',
+            note: 'Bảo dưỡng cấp 20.000km và cân chỉnh thước lái.',
+            staffNote: 'Đã xác nhận giữ Khoang 01 lúc 10:00.'
+          },
+          {
+            id: 'XYZ-107',
+            customerName: 'Phan Văn Trị',
+            phone: '0977888999',
+            licensePlate: '60A-771.05',
+            carModel: 'Kia Carnival Signature',
+            date: today,
+            slot: '10:00',
+            serviceIds: ['SRV-02'],
+            totalDuration: 45,
+            totalPrice: 1150000,
+            status: 'PENDING',
+            bay: 'Chưa phân khoang',
+            technician: 'Chờ phân công',
+            note: 'Thay dầu nhanh buổi sáng.',
+            staffNote: ''
+          },
+          // 14:00 Slot (1/3)
+          {
+            id: 'XYZ-108',
+            customerName: 'Võ Minh Khôi',
+            phone: '0966123456',
+            licensePlate: '51K-901.77',
+            carModel: 'VinFast Lux A2.0',
+            date: today,
+            slot: '14:00',
+            serviceIds: ['SRV-03', 'SRV-06'],
+            totalDuration: 135,
+            totalPrice: 1800000,
+            status: 'PENDING',
+            bay: 'Chưa phân khoang',
+            technician: 'Chờ phân công',
+            note: 'Kiểm tra phanh và vệ sinh điều hòa.',
+            staffNote: ''
+          },
+          {
+            id: 'XYZ-109',
+            customerName: 'Đỗ Thùy Trang',
+            phone: '0919000888',
+            licensePlate: '51K-205.66',
+            carModel: 'Peugeot 3008 AL',
+            date: tomorrow,
+            slot: '09:00',
+            serviceIds: ['SRV-01'],
+            totalDuration: 60,
+            totalPrice: 1450000,
+            status: 'CONFIRMED',
+            bay: 'Khoang 01 - Bảo dưỡng nhanh',
+            technician: 'KTV. Đỗ Minh Tuấn',
+            note: 'Bảo dưỡng định kỳ sáng mai.',
+            staffNote: 'Đã xác nhận lịch hẹn.'
+          }
+        ]
+      };
+    }
+
+    const STORAGE_KEY = 'XYZ_AUTO_PRODUCTION_STATE_V1';
+    const THEME_KEY = 'XYZ_AUTO_THEME_PREF';
+    let appState = loadState();
+
+    // UI Sub-navigation state
+    let selectedCategoryFilter = 'Tất cả';
+    let selectedBookingServiceIds = ['SRV-01'];
+    let selectedBookingDate = getFormattedDateOffset(0);
+    let selectedBookingSlot = '10:00';
+
+    let customerActiveTab = 'BOOKING'; // 'BOOKING' | 'TRACKING'
+    let customerTrackScope = 'MINE';   // 'MINE' | 'ALL'
+
+    let staffSelectedDate = getFormattedDateOffset(0);
+    let staffSelectedSlotFilter = null;
+    let staffSelectedStatusFilter = 'ALL';
+
+    let managerActiveTab = 'ANALYTICS'; // 'ANALYTICS' | 'SERVICES' | 'SETTINGS'
+    let rescheduleSelectedSlot = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.services) && Array.isArray(parsed.appointments)) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      const fresh = createInitialState();
+      saveState(fresh);
+      return fresh;
+    }
+
+    function saveState(stateToSave = appState) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    function resetDemoData() {
+      appState = createInitialState();
+      selectedBookingServiceIds = ['SRV-01'];
+      selectedBookingDate = getFormattedDateOffset(0);
+      selectedBookingSlot = '10:00';
+      staffSelectedDate = getFormattedDateOffset(0);
+      staffSelectedSlotFilter = null;
+      saveState();
+      fillPresetCar(0);
+      syncAllViews();
+      showToast('Đã khôi phục dữ liệu mặc định', 'info');
+    }
+
+    function resetToHome(e) {
+      if (e) e.preventDefault();
+      if (appState.currentRole === 'CUSTOMER') {
+        switchCustomerTab('BOOKING');
+      } else if (appState.currentRole === 'MANAGER') {
+        switchManagerTab('ANALYTICS');
+      }
+      syncAllViews();
+    }
+
+    // --- THEME PERSISTENCE ---
+    function initTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+      const html = document.documentElement;
+      const icon = document.getElementById('themeIcon');
+      if (savedTheme === 'light') {
+        html.classList.remove('dark');
+        icon.className = 'fa-solid fa-moon text-slate-700 text-sm';
+      } else {
+        html.classList.add('dark');
+        icon.className = 'fa-solid fa-sun text-amber-400 text-sm';
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const icon = document.getElementById('themeIcon');
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        icon.className = 'fa-solid fa-moon text-slate-700 text-sm';
+        localStorage.setItem(THEME_KEY, 'light');
+      } else {
+        html.classList.add('dark');
+        icon.className = 'fa-solid fa-sun text-amber-400 text-sm';
+        localStorage.setItem(THEME_KEY, 'dark');
+      }
+    }
+
+    // --- CAPACITY HELPERS ---
+    function getSlotActiveAppointments(dateStr, slotStr, excludeApptId = null) {
+      return appState.appointments.filter(a => {
+        if (excludeApptId && a.id === excludeApptId) return false;
+        const meta = STATUS_META[a.status];
+        return a.date === dateStr && a.slot === slotStr && meta && meta.countsCapacity;
+      });
+    }
+
+    function getSlotLoadCount(dateStr, slotStr, excludeApptId = null) {
+      return getSlotActiveAppointments(dateStr, slotStr, excludeApptId).length;
+    }
+
+    // --- TOAST ---
+    function showToast(message, type = 'success', subtitle = '') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const colorMap = {
+        success: 'border-emerald-500/40 bg-slate-900/95 text-emerald-300',
+        warning: 'border-amber-500/40 bg-slate-900/95 text-amber-300',
+        error: 'border-rose-500/40 bg-slate-900/95 text-rose-300',
+        info: 'border-sky-500/40 bg-slate-900/95 text-sky-300'
+      };
+      const iconMap = {
+        success: 'fa-circle-check text-emerald-400',
+        warning: 'fa-triangle-exclamation text-amber-400',
+        error: 'fa-circle-xmark text-rose-400',
+        info: 'fa-circle-info text-sky-400'
+      };
+      toast.className = `pointer-events-auto p-3 rounded-lg border shadow-xl flex items-start gap-2.5 transition-all duration-200 ${colorMap[type] || colorMap.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${iconMap[type] || iconMap.info} text-sm mt-0.5"></i>
+        <div class="flex-1 text-xs">
+          <div class="font-semibold text-white">${message}</div>
+          ${subtitle ? `<div class="text-[11px] opacity-80 mt-0.5 font-mono">${subtitle}</div>` : ''}
+        </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 200);
+      }, 3500);
+    }
+
+    function openModal(id) {
+      document.getElementById(id)?.classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id)?.classList.add('hidden');
+    }
+
+    // --- USER PROFILE DROPDOWN & AUTHENTICATION ---
+    function toggleUserDropdown(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('userDropdownMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('userDropdownContainer');
+      const menu = document.getElementById('userDropdownMenu');
+      if (container && !container.contains(e.target)) {
+        menu?.classList.add('hidden');
+      }
+    });
+
+    function selectAccountLogin(accId) {
+      const acc = appState.accounts.find(a => a.id === accId);
+      if (!acc) return;
+      appState.activeAccountId = acc.id;
+      appState.currentRole = acc.role;
+      saveState();
+      document.getElementById('userDropdownMenu')?.classList.add('hidden');
+      closeModal('modalLogin');
+      syncAllViews();
+      showToast(`Xin chào ${acc.name}`, 'info', `Phân quyền: ${ROLE_NAMES[acc.role]}`);
+    }
+
+    function openLoginModal() {
+      document.getElementById('userDropdownMenu')?.classList.add('hidden');
+      const list = document.getElementById('modalLoginQuickList');
+      list.innerHTML = appState.accounts.map(acc => `
+        <button onclick="selectAccountLogin('${acc.id}')" class="w-full p-2 rounded-lg card-elevated hover:border-signal flex items-center justify-between text-left transition">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded bg-signal/20 text-signal font-mono font-bold text-[10px] flex items-center justify-center">${acc.avatar}</span>
+            <div>
+              <div class="text-xs font-semibold">${acc.name}</div>
+              <div class="text-[10px] font-mono text-[var(--text-muted)]">${acc.phone}</div>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded card-surface">${ROLE_NAMES[acc.role]}</span>
+        </button>
+      `).join('');
+      openModal('modalLogin');
+    }
+
+    function handlePhoneLogin() {
+      const phone = document.getElementById('loginPhoneInput').value.trim();
+      if (!phone) {
+        showToast('Vui lòng nhập số điện thoại đăng nhập', 'warning');
+        return;
+      }
+      const found = appState.accounts.find(a => a.phone === phone);
+      if (found) {
+        selectAccountLogin(found.id);
+      } else {
+        showToast('Không tìm thấy tài khoản với số điện thoại này', 'error');
+      }
+    }
+
+    // --- HEADER & NAVIGATION RENDERER ---
+    function renderHeaderAndNav() {
+      const activeAcc = appState.accounts.find(a => a.id === appState.activeAccountId) || appState.accounts[0];
+      document.getElementById('headerAvatar').textContent = activeAcc.avatar;
+      document.getElementById('headerUserName').textContent = activeAcc.name;
+      document.getElementById('headerUserRoleBadge').textContent = ROLE_NAMES[activeAcc.role];
+
+      document.getElementById('dropdownActiveName').textContent = activeAcc.name;
+      document.getElementById('dropdownActiveMeta').textContent = activeAcc.meta;
+
+      // Populate dropdown quick switch accounts
+      document.getElementById('dropdownAccountList').innerHTML = appState.accounts.map(acc => {
+        const isCurrent = acc.id === activeAcc.id;
+        return `
+          <button onclick="selectAccountLogin('${acc.id}')" class="w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-left text-xs transition ${isCurrent ? 'bg-signal/15 text-signal font-semibold' : 'hover:bg-white/5'}">
+            <div class="truncate pr-2">
+              <span>${acc.name}</span>
+            </div>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded card-elevated shrink-0">${ROLE_NAMES[acc.role]}</span>
+          </button>
+        `;
+      }).join('');
+
+      // Contextual Navigation Links based on active role
+      let navHtml = '';
+      if (appState.currentRole === 'CUSTOMER') {
+        const myPlates = ['51K-889.26', '51G-402.15'];
+        const myCount = appState.appointments.filter(a => myPlates.includes(a.licensePlate.toUpperCase()) || a.phone === activeAcc.phone).length;
+        navHtml = `
+          <button onclick="switchCustomerTab('BOOKING')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${customerActiveTab === 'BOOKING' ? 'bg-signal text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+            <i class="fa-solid fa-calendar-plus"></i>
+            <span>Đặt lịch bảo dưỡng</span>
+          </button>
+          <button onclick="switchCustomerTab('TRACKING')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${customerActiveTab === 'TRACKING' ? 'bg-signal text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Lịch hẹn của tôi</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono ${customerActiveTab === 'TRACKING' ? 'bg-black/25 text-white' : 'card-elevated text-signal'}">${myCount}</span>
+          </button>
+        `;
+      } else if (appState.currentRole === 'STAFF') {
+        const pendingCount = appState.appointments.filter(a => a.date === staffSelectedDate && a.status === 'PENDING').length;
+        navHtml = `
+          <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-signal text-white flex items-center gap-2">
+            <i class="fa-solid fa-headset"></i>
+            <span>Bàn Điều phối Tiếp nhận</span>
+            ${pendingCount > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-black/30">${pendingCount} chờ duyệt</span>` : ''}
+          </span>
+        `;
+      } else if (appState.currentRole === 'MANAGER') {
+        navHtml = `
+          <button onclick="switchManagerTab('ANALYTICS')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${managerActiveTab === 'ANALYTICS' ? 'bg-signal text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Tổng quan & Thống kê</span>
+          </button>
+          <button onclick="switchManagerTab('SERVICES')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${managerActiveTab === 'SERVICES' ? 'bg-signal text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+            <span>Danh mục Dịch vụ</span>
+          </button>
+          <button onclick="switchManagerTab('SETTINGS')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${managerActiveTab === 'SETTINGS' ? 'bg-signal text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Năng lực & Tài khoản</span>
+          </button>
+        `;
+      }
+
+      document.getElementById('headerContextualNav').innerHTML = navHtml;
+      document.getElementById('mobileContextualNav').innerHTML = navHtml;
+    }
+
+    // --- MASTER SYNC ---
+    function syncAllViews() {
+      ['CUSTOMER', 'STAFF', 'MANAGER'].forEach(r => {
+        const sec = document.getElementById(`view-${r}`);
+        if (appState.currentRole === r) {
+          sec.classList.remove('hidden');
+        } else {
+          sec.classList.add('hidden');
+        }
+      });
+
+      renderHeaderAndNav();
+
+      document.getElementById('customerCapacityHint').textContent = `Định mức: ${appState.maxCapacityPerSlot} xe / khung giờ`;
+      document.getElementById('staffMaxCapBadge').textContent = `(Tối đa ${appState.maxCapacityPerSlot} xe/khung giờ)`;
+
+      // Customer Views
+      renderServiceCategoryPills();
+      renderCustomerServices();
+      renderBookingDateControls();
+      renderBookingTimeSlots();
+      renderBookingFormSummary();
+      renderCustomerTrackingList();
+
+      // Staff Views
+      renderStaffCapacityStrip();
+      renderStaffStatusTabs();
+      renderStaffAppointments();
+
+      // Manager Views
+      renderManagerView();
+    }
+
+    // =========================================================================
+    // A. GIAO DIỆN KHÁCH HÀNG (CUSTOMER WORKFLOW)
+    // =========================================================================
+    function switchCustomerTab(tab) {
+      customerActiveTab = tab;
+      document.getElementById('custTabContent-BOOKING').classList.toggle('hidden', tab !== 'BOOKING');
+      document.getElementById('custTabContent-TRACKING').classList.toggle('hidden', tab !== 'TRACKING');
+      renderHeaderAndNav();
+      if (tab === 'TRACKING') renderCustomerTrackingList();
+    }
+
+    function renderServiceCategoryPills() {
+      const categories = ['Tất cả', ...new Set(appState.services.filter(s => s.active).map(s => s.category))];
+      document.getElementById('serviceCategoryPills').innerHTML = categories.map(cat => {
+        const active = selectedCategoryFilter === cat;
+        return `
+          <button onclick="setServiceCategory('${cat}')" class="px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${active ? 'bg-signal text-white' : 'card-elevated text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+            ${cat}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setServiceCategory(cat) {
+      selectedCategoryFilter = cat;
+      renderServiceCategoryPills();
+      renderCustomerServices();
+    }
+
+    function renderCustomerServices() {
+      const query = (document.getElementById('serviceSearchInput')?.value || '').trim().toLowerCase();
+      const filtered = appState.services.filter(s => {
+        if (!s.active) return false;
+        const matchCat = selectedCategoryFilter === 'Tất cả' || s.category === selectedCategoryFilter;
+        const matchSearch = !query || s.name.toLowerCase().includes(query) || s.code.toLowerCase().includes(query) || s.category.toLowerCase().includes(query);
+        return matchCat && matchSearch;
+      });
+
+      const grid = document.getElementById('customerServiceGrid');
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-2 p-6 text-center text-xs text-[var(--text-muted)] card-elevated rounded-lg">Không tìm thấy dịch vụ phù hợp.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(srv => {
+        const isSelected = selectedBookingServiceIds.includes(srv.id);
+        return `
+          <div onclick="toggleSelectService('${srv.id}')" class="cursor-pointer card-elevated rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition ${isSelected ? 'ring-2 ring-signal bg-signal/5' : 'hover:border-slate-500'}">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] font-medium px-2 py-0.5 rounded card-surface text-[var(--text-muted)]">${srv.category}</span>
+                <button type="button" onclick="event.stopPropagation(); openServiceDetailModal('${srv.id}')" class="w-6 h-6 rounded-md card-surface text-[var(--text-muted)] hover:text-signal flex items-center justify-center transition" title="Xem hạng mục kỹ thuật">
+                  <i class="fa-solid fa-circle-info text-xs"></i>
+                </button>
+              </div>
+              <h3 class="font-display font-bold text-sm leading-snug">${srv.name}</h3>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-[var(--border-color)] font-mono">
+              <span class="text-xs text-[var(--text-muted)]"><i class="fa-regular fa-clock mr-1"></i>${srv.duration} phút</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-signal">${formatCurrency(srv.price)}</span>
+                <span class="w-5 h-5 rounded flex items-center justify-center text-[10px] ${isSelected ? 'bg-signal text-white' : 'card-surface text-[var(--text-muted)]'}">
+                  <i class="fa-solid ${isSelected ? 'fa-check' : 'fa-plus'}"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openServiceDetailModal(srvId) {
+      const srv = appState.services.find(s => s.id === srvId);
+      if (!srv) return;
+      document.getElementById('detailSrvCode').textContent = `${srv.code} • ${srv.category}`;
+      document.getElementById('detailSrvName').textContent = srv.name;
+      document.getElementById('detailSrvDesc').textContent = srv.description;
+      document.getElementById('detailSrvDuration').textContent = `${srv.duration} phút`;
+      document.getElementById('detailSrvPrice').textContent = formatCurrency(srv.price);
+      document.getElementById('detailSrvWarranty').textContent = srv.warranty || '6 tháng';
+      document.getElementById('detailSrvChecklist').innerHTML = (srv.checklist || []).map(item => `
+        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-1"></i><span>${item}</span></li>
+      `).join('');
+
+      const btn = document.getElementById('detailSrvSelectBtn');
+      const isSelected = selectedBookingServiceIds.includes(srv.id);
+      btn.textContent = isSelected ? 'Đã chọn' : 'Chọn dịch vụ này';
+      btn.onclick = () => {
+        if (!selectedBookingServiceIds.includes(srv.id)) {
+          selectedBookingServiceIds.push(srv.id);
+          renderCustomerServices();
+          renderBookingFormSummary();
+        }
+        closeModal('modalServiceDetail');
+      };
+      openModal('modalServiceDetail');
+    }
+
+    function toggleSelectService(srvId) {
+      const idx = selectedBookingServiceIds.indexOf(srvId);
+      if (idx >= 0) selectedBookingServiceIds.splice(idx, 1);
+      else selectedBookingServiceIds.push(srvId);
+      renderCustomerServices();
+      renderBookingFormSummary();
+    }
+
+    function clearSelectedServices() {
+      selectedBookingServiceIds = [];
+      renderCustomerServices();
+      renderBookingFormSummary();
+    }
+
+    function renderBookingDateControls() {
+      const today = getFormattedDateOffset(0);
+      const tomorrow = getFormattedDateOffset(1);
+      document.getElementById('dateLabel-0').textContent = formatShortVNDate(today);
+      document.getElementById('dateLabel-1').textContent = formatShortVNDate(tomorrow);
+      document.getElementById('bookDateInput').value = selectedBookingDate;
+
+      document.getElementById('dateBtn-0').className = `py-2 px-3 rounded-lg text-xs font-semibold border transition flex items-center justify-between ${selectedBookingDate === today ? 'bg-signal/15 border-signal text-signal' : 'card-elevated text-[var(--text-muted)]'}`;
+      document.getElementById('dateBtn-1').className = `py-2 px-3 rounded-lg text-xs font-semibold border transition flex items-center justify-between ${selectedBookingDate === tomorrow ? 'bg-signal/15 border-signal text-signal' : 'card-elevated text-[var(--text-muted)]'}`;
+    }
+
+    function selectBookingDateOffset(offset) {
+      selectedBookingDate = getFormattedDateOffset(offset);
+      renderBookingDateControls();
+      renderBookingTimeSlots();
+      renderBookingFormSummary();
+    }
+
+    function onCustomBookingDateChange(val) {
+      if (!val) return;
+      selectedBookingDate = val;
+      renderBookingDateControls();
+      renderBookingTimeSlots();
+      renderBookingFormSummary();
+    }
+
+    function renderBookingTimeSlots() {
+      const maxCap = appState.maxCapacityPerSlot;
+      const grid = document.getElementById('bookingTimeSlotGrid');
+
+      if (getSlotLoadCount(selectedBookingDate, selectedBookingSlot) >= maxCap) {
+        selectedBookingSlot = TIME_SLOTS.find(sl => getSlotLoadCount(selectedBookingDate, sl) < maxCap) || null;
+      }
+
+      grid.innerHTML = TIME_SLOTS.map(slot => {
+        const load = getSlotLoadCount(selectedBookingDate, slot);
+        const isFull = load >= maxCap;
+        const remaining = Math.max(0, maxCap - load);
+        const isSelected = selectedBookingSlot === slot && !isFull;
+
+        return `
+          <button type="button"
+            ${isFull ? 'disabled' : `onclick="selectTimeSlot('${slot}')"`}
+            class="p-2.5 rounded-lg border text-left transition flex flex-col justify-between gap-1 ${
+              isFull
+                ? 'border-rose-500/25 opacity-50 cursor-not-allowed card-elevated'
+                : isSelected
+                  ? 'bg-signal/15 border-signal ring-1 ring-signal'
+                  : 'card-elevated hover:border-slate-500'
+            }">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-mono font-bold text-sm ${isSelected ? 'text-signal' : isFull ? 'line-through text-rose-400' : ''}">${slot}</span>
+              ${isFull ? '<span class="text-[10px] font-mono text-rose-400 font-semibold">Đầy</span>' : isSelected ? '<i class="fa-solid fa-circle-check text-xs text-signal"></i>' : ''}
+            </div>
+            <div class="text-[11px] font-mono ${isFull ? 'text-rose-400' : remaining === 1 ? 'text-amber-400' : 'text-emerald-400'}">
+              ${isFull ? `Đã đầy ${load}/${maxCap}` : `Còn ${remaining}/${maxCap} chỗ`}
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectTimeSlot(slot) {
+      selectedBookingSlot = slot;
+      renderBookingTimeSlots();
+      renderBookingFormSummary();
+    }
+
+    function renderBookingFormSummary() {
+      const selectedObjects = appState.services.filter(s => selectedBookingServiceIds.includes(s.id) && s.active);
+      const totalPrice = selectedObjects.reduce((sum, s) => sum + s.price, 0);
+      const totalDuration = selectedObjects.reduce((sum, s) => sum + s.duration, 0);
+
+      document.getElementById('selectedSrvCount').textContent = selectedObjects.length;
+      document.getElementById('bookingTotalPrice').textContent = formatCurrency(totalPrice);
+      document.getElementById('bookingTotalDuration').textContent = `${totalDuration} phút`;
+      document.getElementById('summaryDateTimeDisplay').textContent = selectedBookingSlot
+        ? `${selectedBookingSlot} • ${formatShortVNDate(selectedBookingDate)}`
+        : 'Chưa chọn giờ';
+
+      const listEl = document.getElementById('selectedServicesList');
+      if (selectedObjects.length === 0) {
+        listEl.innerHTML = `<div class="p-2.5 rounded-lg card-elevated text-xs text-amber-400">Chưa chọn dịch vụ nào.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = selectedObjects.map(s => `
+        <div class="px-2.5 py-1.5 rounded-lg card-elevated flex items-center justify-between text-xs">
+          <span class="truncate pr-2 font-medium">${s.name}</span>
+          <div class="flex items-center gap-2 shrink-0 font-mono">
+            <span class="text-signal font-semibold">${formatCurrency(s.price)}</span>
+            <button onclick="toggleSelectService('${s.id}')" class="text-[var(--text-muted)] hover:text-rose-400"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function fillPresetCar(presetIdx) {
+      const car = appState.customerPresetCars[presetIdx];
+      if (!car) return;
+      document.getElementById('bookCustomerName').value = car.owner;
+      document.getElementById('bookCustomerPhone').value = car.phone;
+      document.getElementById('bookLicensePlate').value = car.plate;
+      document.getElementById('bookCarModel').value = car.model;
+    }
+
+    function submitCustomerBooking() {
+      const selectedObjects = appState.services.filter(s => selectedBookingServiceIds.includes(s.id) && s.active);
+      if (selectedObjects.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 dịch vụ', 'warning');
+        return;
+      }
+
+      const customerName = document.getElementById('bookCustomerName').value.trim();
+      const phone = document.getElementById('bookCustomerPhone').value.trim();
+      const licensePlate = document.getElementById('bookLicensePlate').value.trim().toUpperCase();
+      const carModel = document.getElementById('bookCarModel').value.trim();
+      const note = document.getElementById('bookSymptomNote').value.trim();
+
+      if (!customerName || !phone || !licensePlate || !carModel) {
+        showToast('Vui lòng nhập đầy đủ Họ tên, SĐT, Biển số và Dòng xe', 'warning');
+        return;
+      }
+
+      if (!selectedBookingSlot) {
+        showToast('Vui lòng chọn khung giờ còn trống', 'error');
+        return;
+      }
+
+      const currentLoad = getSlotLoadCount(selectedBookingDate, selectedBookingSlot);
+      if (currentLoad >= appState.maxCapacityPerSlot) {
+        showToast(`Khung giờ ${selectedBookingSlot} đã đầy`, 'error');
+        renderBookingTimeSlots();
+        return;
+      }
+
+      const duplicateCar = getSlotActiveAppointments(selectedBookingDate, selectedBookingSlot).find(
+        a => a.licensePlate.toUpperCase() === licensePlate
+      );
+      if (duplicateCar) {
+        showToast(`Biển số ${licensePlate} đã có lịch hẹn lúc ${selectedBookingSlot}`, 'error', `Mã lịch hẹn: ${duplicateCar.id}`);
+        return;
+      }
+
+      const nextNum = 101 + appState.appointments.length;
+      const newAppt = {
+        id: `XYZ-${nextNum}`,
+        customerName,
+        phone,
+        licensePlate,
+        carModel,
+        date: selectedBookingDate,
+        slot: selectedBookingSlot,
+        serviceIds: selectedObjects.map(s => s.id),
+        totalDuration: selectedObjects.reduce((sum, s) => sum + s.duration, 0),
+        totalPrice: selectedObjects.reduce((sum, s) => sum + s.price, 0),
+        status: 'PENDING',
+        bay: 'Chờ phân khoang',
+        technician: 'Chờ phân công',
+        note: note || '',
+        staffNote: ''
+      };
+
+      appState.appointments.unshift(newAppt);
+      saveState();
+      document.getElementById('bookSymptomNote').value = '';
+      syncAllViews();
+
+      showToast(`Đặt lịch thành công (${newAppt.id})`, 'success', `${newAppt.licensePlate} • ${newAppt.slot} ngày ${formatShortVNDate(newAppt.date)}`);
+      switchCustomerTab('TRACKING');
+    }
+
+    // --- CUSTOMER TRACKING & SELF-SERVICE ---
+    function setCustomerTrackScope(scope) {
+      customerTrackScope = scope;
+      document.getElementById('trackScope-MINE').className = `px-3 py-1 rounded-md font-semibold transition ${scope === 'MINE' ? 'bg-signal text-white' : 'text-[var(--text-muted)]'}`;
+      document.getElementById('trackScope-ALL').className = `px-3 py-1 rounded-md font-semibold transition ${scope === 'ALL' ? 'bg-signal text-white' : 'text-[var(--text-muted)]'}`;
+      renderCustomerTrackingList();
+    }
+
+    function renderCustomerTrackingList() {
+      const search = (document.getElementById('customerTrackSearch')?.value || '').trim().toLowerCase();
+      const activeAcc = appState.accounts.find(a => a.id === appState.activeAccountId) || appState.accounts[0];
+      const myPlates = ['51K-889.26', '51G-402.15'];
+
+      const filtered = appState.appointments.filter(a => {
+        const matchScope = customerTrackScope === 'ALL' || search.length > 0 || myPlates.includes(a.licensePlate.toUpperCase()) || a.phone === activeAcc.phone;
+        const matchSearch = !search || a.id.toLowerCase().includes(search) || a.licensePlate.toLowerCase().includes(search) || a.customerName.toLowerCase().includes(search) || a.phone.includes(search);
+        return matchScope && matchSearch;
+      });
+
+      const container = document.getElementById('customerTrackingContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 rounded-xl card-elevated text-center text-xs text-[var(--text-muted)]">Không tìm thấy lịch hẹn nào.</div>`;
+        return;
+      }
+
+      const steps = [
+        { num: 1, label: 'Chờ xác nhận' },
+        { num: 2, label: 'Đã xác nhận' },
+        { num: 3, label: 'Đang thực hiện' },
+        { num: 4, label: 'Hoàn tất' }
+      ];
+
+      container.innerHTML = filtered.map(appt => {
+        const meta = STATUS_META[appt.status] || STATUS_META.PENDING;
+        const srvNames = appt.serviceIds.map(id => appState.services.find(s => s.id === id)?.name || id);
+        const canModify = appt.status === 'PENDING' || appt.status === 'CONFIRMED';
+        const isStopped = ['CANCELLED', 'REJECTED', 'NO_SHOW'].includes(appt.status);
+
+        return `
+          <div class="card-elevated rounded-xl p-4 space-y-3.5">
+            <!-- Header Row -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-color)] pb-3">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <span class="font-mono font-bold text-xs px-2 py-0.5 rounded card-surface">${appt.id}</span>
+                <span class="vn-plate">${appt.licensePlate}</span>
+                <span class="text-xs font-bold">${appt.carModel}</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <span class="font-mono text-xs font-semibold text-amber-400">
+                  <i class="fa-regular fa-clock mr-1"></i>${appt.slot} • ${formatVNDate(appt.date)}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${meta.badgeClass}">
+                  ${meta.label}
+                </span>
+              </div>
+            </div>
+
+            <!-- 4-Step Horizontal Progress Stepper -->
+            ${!isStopped ? `
+              <div class="grid grid-cols-4 gap-2">
+                ${steps.map(st => {
+                  const active = meta.step >= st.num;
+                  const current = meta.step === st.num;
+                  return `
+                    <div class="space-y-1">
+                      <div class="h-1.5 rounded-full ${active ? (current ? 'bg-signal' : 'bg-emerald-500') : 'bg-slate-700/50'}"></div>
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-semibold ${active ? (current ? 'text-signal' : 'text-emerald-400') : 'text-[var(--text-muted)]'}">${st.label}</span>
+                        ${active ? '<i class="fa-solid fa-check text-[10px] text-emerald-400"></i>' : ''}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : `
+              <div class="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300">
+                <i class="fa-solid fa-circle-info mr-1.5"></i>${appt.staffNote || 'Lịch hẹn đã hủy hoặc từ chối tiếp nhận.'}
+              </div>
+            `}
+
+            <!-- Details & Self-Service Buttons -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
+              <div class="space-y-1">
+                <div><span class="text-[var(--text-muted)]">Dịch vụ:</span> <span class="font-medium">${srvNames.join(' + ')}</span></div>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-[var(--text-muted)]">
+                  <span>Khoang: <strong class="font-mono text-[var(--text-main)]">${appt.bay}</strong></span>
+                  <span>Phụ trách: <strong class="text-[var(--text-main)]">${appt.technician}</strong></span>
+                  ${appt.staffNote && !isStopped ? `<span class="text-sky-400">Ghi chú xưởng: ${appt.staffNote}</span>` : ''}
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <div class="text-right font-mono mr-2">
+                  <div class="text-[10px] text-[var(--text-muted)]">${appt.totalDuration} phút</div>
+                  <div class="text-sm font-bold text-signal">${formatCurrency(appt.totalPrice)}</div>
+                </div>
+                ${canModify ? `
+                  <button onclick="openRescheduleModal('${appt.id}')" class="px-3 py-1.5 rounded-lg card-surface hover:border-signal text-xs font-semibold transition">
+                    Đổi lịch hẹn
+                  </button>
+                  <button onclick="openCustomerCancelModal('${appt.id}')" class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white text-xs font-semibold transition">
+                    Hủy lịch
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openRescheduleModal(apptId) {
+      const appt = appState.appointments.find(a => a.id === apptId);
+      if (!appt) return;
+      document.getElementById('rescheduleApptId').value = appt.id;
+      document.getElementById('rescheduleCurrentSummary').innerHTML = `
+        <div class="flex items-center justify-between">
+          <span>Mã hẹn: <strong class="font-mono">${appt.id}</strong> • <span class="vn-plate">${appt.licensePlate}</span></span>
+          <span class="font-mono text-amber-400">${appt.slot} • ${formatShortVNDate(appt.date)}</span>
+        </div>
+      `;
+      document.getElementById('rescheduleDateInput').value = appt.date;
+      rescheduleSelectedSlot = appt.slot;
+
+      document.getElementById('rescheduleServiceCheckboxes').innerHTML = appState.services.filter(s => s.active).map(s => `
+        <label class="p-2 rounded-lg card-elevated flex items-center gap-2 text-xs cursor-pointer">
+          <input type="checkbox" name="rescheduleSrv" value="${s.id}" ${appt.serviceIds.includes(s.id) ? 'checked' : ''} class="accent-signal" />
+          <span class="truncate">${s.name}</span>
+        </label>
+      `).join('');
+
+      renderRescheduleSlots();
+      openModal('modalReschedule');
+    }
+
+    function renderRescheduleSlots() {
+      const apptId = document.getElementById('rescheduleApptId').value;
+      const newDate = document.getElementById('rescheduleDateInput').value;
+      const maxCap = appState.maxCapacityPerSlot;
+      document.getElementById('rescheduleSlotGrid').innerHTML = TIME_SLOTS.map(slot => {
+        const load = getSlotLoadCount(newDate, slot, apptId);
+        const isFull = load >= maxCap;
+        const isSelected = rescheduleSelectedSlot === slot && !isFull;
+        return `
+          <button type="button" ${isFull ? 'disabled' : `onclick="selectRescheduleSlot('${slot}')"`}
+            class="p-2 rounded-lg border text-center font-mono text-xs transition ${
+              isFull ? 'opacity-40 cursor-not-allowed text-rose-400' :
+              isSelected ? 'bg-signal text-white border-signal font-bold' : 'card-elevated'
+            }">
+            <div>${slot}</div>
+            <div class="text-[10px] opacity-80">${isFull ? 'Đầy' : `${load}/${maxCap}`}</div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectRescheduleSlot(slot) {
+      rescheduleSelectedSlot = slot;
+      renderRescheduleSlots();
+    }
+
+    function confirmRescheduleBooking() {
+      const apptId = document.getElementById('rescheduleApptId').value;
+      const appt = appState.appointments.find(a => a.id === apptId);
+      if (!appt) return;
+
+      const newDate = document.getElementById('rescheduleDateInput').value;
+      const checkedBoxes = Array.from(document.querySelectorAll('input[name="rescheduleSrv"]:checked')).map(cb => cb.value);
+
+      if (checkedBoxes.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 dịch vụ', 'warning');
+        return;
+      }
+
+      if (!rescheduleSelectedSlot || getSlotLoadCount(newDate, rescheduleSelectedSlot, appt.id) >= appState.maxCapacityPerSlot) {
+        showToast('Khung giờ đã đầy, vui lòng chọn giờ khác', 'error');
+        return;
+      }
+
+      appt.date = newDate;
+      appt.slot = rescheduleSelectedSlot;
+      appt.serviceIds = checkedBoxes;
+      const selectedObjects = appState.services.filter(s => checkedBoxes.includes(s.id));
+      appt.totalDuration = selectedObjects.reduce((sum, s) => sum + s.duration, 0);
+      appt.totalPrice = selectedObjects.reduce((sum, s) => sum + s.price, 0);
+      appt.staffNote = `Đã cập nhật sang khung giờ ${appt.slot} ngày ${formatShortVNDate(appt.date)}.`;
+
+      saveState();
+      closeModal('modalReschedule');
+      syncAllViews();
+      showToast(`Đã đổi lịch hẹn ${appt.id}`, 'success');
+    }
+
+    function openCustomerCancelModal(apptId) {
+      document.getElementById('cancelApptId').value = apptId;
+      document.getElementById('cancelActionMode').value = 'CUSTOMER_CANCEL';
+      document.getElementById('cancelModalTitle').textContent = `Hủy Lịch hẹn ${apptId}`;
+      document.getElementById('cancelModalDesc').textContent = 'Chỗ trống trong khung giờ sẽ được giải phóng ngay sau khi hủy.';
+      const reasons = ['Bận công việc đột xuất', 'Đặt lại vào ngày khác', 'Xe đã ổn định'];
+      document.getElementById('cancelQuickReasons').innerHTML = reasons.map(r => `
+        <button type="button" onclick="document.getElementById('cancelReasonInput').value='${r}'" class="px-2.5 py-1 rounded-md card-elevated text-[11px] hover:border-rose-400 transition">${r}</button>
+      `).join('');
+      document.getElementById('cancelReasonInput').value = reasons[0];
+      openModal('modalCancelOrReject');
+    }
+
+    function openStaffRejectModal(apptId) {
+      document.getElementById('cancelApptId').value = apptId;
+      document.getElementById('cancelActionMode').value = 'STAFF_REJECT';
+      document.getElementById('cancelModalTitle').textContent = `Từ chối Lịch hẹn ${apptId}`;
+      document.getElementById('cancelModalDesc').textContent = 'Nhập lý do từ chối tiếp nhận để thông báo cho khách hàng:';
+      const reasons = [
+        'Cần đặt trước phụ tùng chuyên biệt (2-3 ngày)',
+        'Hạng mục đồng sơn không nhận qua đặt lịch nhanh',
+        'Thiết bị chẩn đoán chuyên sâu đang bảo trì'
+      ];
+      document.getElementById('cancelQuickReasons').innerHTML = reasons.map(r => `
+        <button type="button" onclick="document.getElementById('cancelReasonInput').value='${r}'" class="px-2.5 py-1 rounded-md card-elevated text-[11px] hover:border-rose-400 transition">${r}</button>
+      `).join('');
+      document.getElementById('cancelReasonInput').value = reasons[0];
+      openModal('modalCancelOrReject');
+    }
+
+    function confirmCancelOrReject() {
+      const apptId = document.getElementById('cancelApptId').value;
+      const mode = document.getElementById('cancelActionMode').value;
+      const reason = document.getElementById('cancelReasonInput').value.trim() || 'Không có ghi chú';
+      const appt = appState.appointments.find(a => a.id === apptId);
+      if (!appt) return;
+
+      if (mode === 'CUSTOMER_CANCEL') {
+        appt.status = 'CANCELLED';
+        appt.staffNote = `Khách hủy: ${reason}`;
+        appt.bay = 'Đã giải phóng';
+        showToast(`Đã hủy lịch hẹn ${appt.id}`, 'warning');
+      } else {
+        appt.status = 'REJECTED';
+        appt.staffNote = `Từ chối: ${reason}`;
+        appt.bay = 'Đã giải phóng';
+        showToast(`Đã từ chối lịch hẹn ${appt.id}`, 'warning');
+      }
+
+      saveState();
+      closeModal('modalCancelOrReject');
+      syncAllViews();
+    }
+
+
+    // =========================================================================
+    // B. GIAO DIỆN NHÂN VIÊN TIẾP NHẬN (SERVICE ADVISOR WORKFLOW)
+    // =========================================================================
+    function setStaffFilterDateOffset(offset) {
+      staffSelectedDate = getFormattedDateOffset(offset);
+      staffSelectedSlotFilter = null;
+      syncAllViews();
+    }
+
+    function onStaffDateInputChange(val) {
+      if (!val) return;
+      staffSelectedDate = val;
+      staffSelectedSlotFilter = null;
+      syncAllViews();
+    }
+
+    function toggleStaffSlotFilter(slot) {
+      staffSelectedSlotFilter = staffSelectedSlotFilter === slot ? null : slot;
+      renderStaffCapacityStrip();
+      renderStaffStatusTabs();
+      renderStaffAppointments();
+    }
+
+    function clearStaffSlotFilter() {
+      staffSelectedSlotFilter = null;
+      renderStaffCapacityStrip();
+      renderStaffStatusTabs();
+      renderStaffAppointments();
+    }
+
+    function renderStaffCapacityStrip() {
+      const today = getFormattedDateOffset(0);
+      const tomorrow = getFormattedDateOffset(1);
+      document.getElementById('staffFilterDate').value = staffSelectedDate;
+      document.getElementById('staffDateBtn-0').className = `px-2.5 py-1 rounded-md text-xs font-mono font-semibold border transition ${staffSelectedDate === today ? 'bg-signal text-white border-signal' : 'card-elevated text-[var(--text-muted)]'}`;
+      document.getElementById('staffDateBtn-1').className = `px-2.5 py-1 rounded-md text-xs font-mono font-semibold border transition ${staffSelectedDate === tomorrow ? 'bg-signal text-white border-signal' : 'card-elevated text-[var(--text-muted)]'}`;
+
+      const clearBtn = document.getElementById('clearSlotFilterBtn');
+      if (staffSelectedSlotFilter) {
+        clearBtn.classList.remove('hidden');
+        clearBtn.innerHTML = `Khung giờ ${staffSelectedSlotFilter} <i class="fa-solid fa-xmark ml-1"></i>`;
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      const maxCap = appState.maxCapacityPerSlot;
+      document.getElementById('staffCapacityStrip').innerHTML = TIME_SLOTS.map(slot => {
+        const load = getSlotLoadCount(staffSelectedDate, slot);
+        const isFull = load >= maxCap;
+        const pct = Math.min(100, Math.round((load / maxCap) * 100));
+        const isSelected = staffSelectedSlotFilter === slot;
+
+        return `
+          <button onclick="toggleStaffSlotFilter('${slot}')" class="p-2.5 rounded-lg border text-left transition ${
+            isSelected ? 'ring-2 ring-signal border-signal bg-signal/10' : 'card-elevated hover:border-slate-500'
+          }">
+            <div class="flex items-center justify-between font-mono text-xs">
+              <span class="font-bold">${slot}</span>
+              <span class="font-semibold ${isFull ? 'text-rose-400' : load === maxCap - 1 ? 'text-amber-400' : 'text-emerald-400'}">${load}/${maxCap}${isFull ? ' Đầy' : ''}</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-black/30 overflow-hidden mt-1.5">
+              <div class="h-full ${isFull ? 'bg-rose-500' : load === maxCap - 1 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: ${pct}%"></div>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderStaffStatusTabs() {
+      const counts = { ALL: 0, PENDING: 0, CONFIRMED: 0, IN_PROGRESS: 0, COMPLETED: 0, INACTIVE: 0 };
+      appState.appointments.filter(a => a.date === staffSelectedDate && (!staffSelectedSlotFilter || a.slot === staffSelectedSlotFilter)).forEach(a => {
+        counts.ALL++;
+        if (counts[a.status] !== undefined) counts[a.status]++;
+        else counts.INACTIVE++;
+      });
+
+      const tabs = [
+        { key: 'ALL', label: 'Tất cả', count: counts.ALL },
+        { key: 'PENDING', label: 'Chờ xác nhận', count: counts.PENDING },
+        { key: 'CONFIRMED', label: 'Đã xác nhận', count: counts.CONFIRMED },
+        { key: 'IN_PROGRESS', label: 'Đang sửa chữa', count: counts.IN_PROGRESS },
+        { key: 'COMPLETED', label: 'Hoàn tất', count: counts.COMPLETED },
+        { key: 'INACTIVE', label: 'Đã hủy/Từ chối', count: counts.INACTIVE }
+      ];
+
+      document.getElementById('staffStatusTabs').innerHTML = tabs.map(t => {
+        const active = staffSelectedStatusFilter === t.key;
+        return `
+          <button onclick="setStaffStatusFilter('${t.key}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition ${
+            active ? 'bg-signal text-white' : 'card-elevated text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          }">
+            <span>${t.label}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono ${active ? 'bg-black/25 text-white' : 'card-surface'}">${t.count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setStaffStatusFilter(statusKey) {
+      staffSelectedStatusFilter = statusKey;
+      renderStaffStatusTabs();
+      renderStaffAppointments();
+    }
+
+    function renderStaffAppointments() {
+      const query = (document.getElementById('staffSearchInput')?.value || '').trim().toLowerCase();
+      const filtered = appState.appointments.filter(a => {
+        if (a.date !== staffSelectedDate) return false;
+        if (staffSelectedSlotFilter && a.slot !== staffSelectedSlotFilter) return false;
+        if (staffSelectedStatusFilter === 'INACTIVE') {
+          if (!['CANCELLED', 'REJECTED', 'NO_SHOW'].includes(a.status)) return false;
+        } else if (staffSelectedStatusFilter !== 'ALL' && a.status !== staffSelectedStatusFilter) {
+          return false;
+        }
+        return !query || a.id.toLowerCase().includes(query) || a.licensePlate.toLowerCase().includes(query) || a.customerName.toLowerCase().includes(query) || a.phone.includes(query);
+      });
+
+      const container = document.getElementById('staffAppointmentsContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 rounded-xl card-elevated text-center text-xs text-[var(--text-muted)]">Không có lịch hẹn nào khớp bộ lọc.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(appt => {
+        const meta = STATUS_META[appt.status] || STATUS_META.PENDING;
+        const srvNames = appt.serviceIds.map(id => appState.services.find(s => s.id === id)?.name || id);
+
+        return `
+          <div class="card-elevated rounded-xl p-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:border-slate-500 transition">
+            <div class="space-y-1.5 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-mono font-bold text-xs">${appt.slot}</span>
+                <span class="font-mono font-bold text-xs text-[var(--text-muted)]">${appt.id}</span>
+                <span class="vn-plate">${appt.licensePlate}</span>
+                <span class="font-bold text-xs">${appt.carModel}</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${meta.badgeClass}">${meta.label}</span>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
+                <span>Khách: <strong class="text-[var(--text-main)]">${appt.customerName}</strong> (<span class="font-mono text-sky-400">${appt.phone}</span>)</span>
+                <span>Khoang: <strong class="font-mono text-emerald-400">${appt.bay}</strong></span>
+                <span>KTV: <strong class="text-[var(--text-main)]">${appt.technician}</strong></span>
+              </div>
+
+              <div class="text-xs">
+                <span class="font-medium">${srvNames.join(' + ')}</span>
+                <span class="font-mono text-signal font-semibold ml-1.5">(${formatCurrency(appt.totalPrice)} • ${appt.totalDuration}p)</span>
+              </div>
+
+              ${appt.note ? `<div class="text-[11px] text-[var(--text-muted)]">Ghi chú khách: "${appt.note}"</div>` : ''}
+            </div>
+
+            <!-- Contextual 1-Click Actions -->
+            <div class="flex flex-wrap items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[var(--border-color)]">
+              ${appt.status === 'PENDING' ? `
+                <button onclick="openStaffConfirmModal('${appt.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+                  <i class="fa-solid fa-check mr-1"></i>Duyệt & Gán khoang
+                </button>
+                <button onclick="openStaffRejectModal('${appt.id}')" class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white text-xs font-semibold transition">
+                  Từ chối
+                </button>
+              ` : ''}
+
+              ${appt.status === 'CONFIRMED' ? `
+                <button onclick="updateAppointmentStatus('${appt.id}', 'IN_PROGRESS')" class="px-3 py-1.5 rounded-lg bg-signal hover:bg-signal-hover text-white text-xs font-semibold transition">
+                  <i class="fa-solid fa-play mr-1"></i>Bắt đầu sửa chữa
+                </button>
+                <button onclick="updateAppointmentStatus('${appt.id}', 'NO_SHOW')" class="px-2.5 py-1.5 rounded-lg card-surface text-[var(--text-muted)] hover:text-rose-400 text-xs font-medium transition">
+                  Vắng mặt
+                </button>
+              ` : ''}
+
+              ${appt.status === 'IN_PROGRESS' ? `
+                <button onclick="updateAppointmentStatus('${appt.id}', 'COMPLETED')" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+                  <i class="fa-solid fa-check-double mr-1"></i>Hoàn tất & Bàn giao
+                </button>
+              ` : ''}
+
+              ${appt.status === 'COMPLETED' ? `
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-mono">
+                  <i class="fa-solid fa-check mr-1"></i>Đã bàn giao
+                </span>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openStaffConfirmModal(apptId) {
+      const appt = appState.appointments.find(a => a.id === apptId);
+      if (!appt) return;
+      document.getElementById('staffConfirmApptId').value = appt.id;
+      document.getElementById('staffConfirmSummary').innerHTML = `
+        <div class="flex items-center justify-between">
+          <span><strong>${appt.customerName}</strong> • <span class="vn-plate">${appt.licensePlate}</span></span>
+          <span class="font-mono text-amber-400">${appt.slot} • ${formatShortVNDate(appt.date)}</span>
+        </div>
+      `;
+      document.getElementById('staffConfirmNote').value = '';
+      openModal('modalStaffConfirm');
+    }
+
+    function submitStaffConfirm() {
+      const apptId = document.getElementById('staffConfirmApptId').value;
+      const bay = document.getElementById('staffConfirmBay').value;
+      const tech = document.getElementById('staffConfirmTech').value;
+      const note = document.getElementById('staffConfirmNote').value.trim();
+
+      const appt = appState.appointments.find(a => a.id === apptId);
+      if (!appt) return;
+
+      appt.status = 'CONFIRMED';
+      appt.bay = bay;
+      appt.technician = tech;
+      appt.staffNote = note || `Đã xếp ${bay}`;
+
+      saveState();
+      closeModal('modalStaffConfirm');
+      syncAllViews();
+      showToast(`Đã duyệt lịch hẹn ${appt.id}`, 'success', `${bay} • ${tech}`);
+    }
+
+    function updateAppointmentStatus(apptId, nextStatus) {
+      const appt = appState.appointments.find(a => a.id === apptId);
+      if (!appt) return;
+      appt.status = nextStatus;
+      if (nextStatus === 'IN_PROGRESS') {
+        appt.staffNote = `Đang thực hiện tại ${appt.bay}`;
+        showToast(`Bắt đầu sửa chữa xe ${appt.licensePlate}`, 'info');
+      } else if (nextStatus === 'COMPLETED') {
+        appt.staffNote = 'Đã hoàn tất và bàn giao xe';
+        showToast(`Hoàn tất & bàn giao xe ${appt.licensePlate}`, 'success');
+      } else if (nextStatus === 'NO_SHOW') {
+        appt.staffNote = 'Khách vắng mặt, đã giải phóng khoang';
+        appt.bay = 'Đã giải phóng';
+        showToast(`Đã đánh dấu vắng mặt (${appt.id})`, 'warning');
+      }
+      saveState();
+      syncAllViews();
+    }
+
+    function openWalkInModal() {
+      document.getElementById('walkinDate').value = staffSelectedDate;
+      populateWalkinSlots();
+      document.getElementById('walkinServiceList').innerHTML = appState.services.filter(s => s.active).map((s, idx) => `
+        <label class="p-2 rounded-lg card-elevated flex items-center gap-2 text-xs cursor-pointer">
+          <input type="checkbox" name="walkinSrv" value="${s.id}" ${idx === 0 ? 'checked' : ''} class="accent-signal" />
+          <span class="truncate">${s.name}</span>
+        </label>
+      `).join('');
+      openModal('modalWalkIn');
+    }
+
+    function populateWalkinSlots() {
+      const dateVal = document.getElementById('walkinDate').value || getFormattedDateOffset(0);
+      const maxCap = appState.maxCapacityPerSlot;
+      document.getElementById('walkinSlot').innerHTML = TIME_SLOTS.map(slot => {
+        const load = getSlotLoadCount(dateVal, slot);
+        const isFull = load >= maxCap;
+        return `<option value="${slot}" ${isFull ? 'disabled' : ''}>${slot} (${isFull ? `Đã đầy ${load}/${maxCap}` : `Còn ${maxCap - load}/${maxCap} chỗ`})</option>`;
+      }).join('');
+    }
+
+    function submitWalkInBooking() {
+      const name = document.getElementById('walkinName').value.trim();
+      const phone = document.getElementById('walkinPhone').value.trim();
+      const plate = document.getElementById('walkinPlate').value.trim().toUpperCase();
+      const model = document.getElementById('walkinModel').value.trim();
+      const date = document.getElementById('walkinDate').value;
+      const slot = document.getElementById('walkinSlot').value;
+      const checkedSrvs = Array.from(document.querySelectorAll('input[name="walkinSrv"]:checked')).map(c => c.value);
+
+      if (!name || !phone || !plate || !model || !slot || checkedSrvs.length === 0) {
+        showToast('Vui lòng nhập đủ thông tin và chọn dịch vụ', 'warning');
+        return;
+      }
+
+      if (getSlotLoadCount(date, slot) >= appState.maxCapacityPerSlot) {
+        showToast(`Khung giờ ${slot} đã đầy`, 'error');
+        return;
+      }
+
+      const srvObjs = appState.services.filter(s => checkedSrvs.includes(s.id));
+      const nextNum = 101 + appState.appointments.length;
+      const newAppt = {
+        id: `XYZ-${nextNum}`,
+        customerName: name,
+        phone,
+        licensePlate: plate,
+        carModel: model,
+        date,
+        slot,
+        serviceIds: checkedSrvs,
+        totalDuration: srvObjs.reduce((sum, s) => sum + s.duration, 0),
+        totalPrice: srvObjs.reduce((sum, s) => sum + s.price, 0),
+        status: 'CONFIRMED',
+        bay: 'Khoang 01 - Bảo dưỡng nhanh',
+        technician: 'KTV. Đỗ Minh Tuấn',
+        note: 'Tiếp nhận trực tiếp',
+        staffNote: 'Đã duyệt tại quầy tiếp nhận'
+      };
+
+      appState.appointments.unshift(newAppt);
+      saveState();
+      closeModal('modalWalkIn');
+      syncAllViews();
+      showToast(`Đã tạo lịch tiếp nhận ${newAppt.id}`, 'success');
+    }
+
+
+    // =========================================================================
+    // C. GIAO DIỆN QUẢN LÝ (MANAGER WORKFLOW)
+    // =========================================================================
+    function switchManagerTab(tab) {
+      managerActiveTab = tab;
+      ['ANALYTICS', 'SERVICES', 'SETTINGS'].forEach(t => {
+        document.getElementById(`mgrTabContent-${t}`)?.classList.toggle('hidden', t !== tab);
+      });
+      renderHeaderAndNav();
+      renderManagerView();
+    }
+
+    function renderManagerView() {
+      renderManagerAnalytics();
+      renderManagerServicesTable();
+      renderManagerCapacityAndAccounts();
+    }
+
+    function renderManagerAnalytics() {
+      const allAppts = appState.appointments;
+      const totalCount = allAppts.length;
+      const validAppts = allAppts.filter(a => STATUS_META[a.status]?.countsCapacity);
+      const onTrackCount = allAppts.filter(a => ['COMPLETED', 'IN_PROGRESS', 'CONFIRMED'].includes(a.status)).length;
+      const onTimeRate = totalCount > 0 ? Math.round((onTrackCount / totalCount) * 100) : 0;
+
+      const today = getFormattedDateOffset(0);
+      const todayActive = allAppts.filter(a => a.date === today && STATUS_META[a.status]?.countsCapacity).length;
+      const dailyMax = appState.maxCapacityPerSlot * TIME_SLOTS.length;
+      const utilRate = Math.min(100, Math.round((todayActive / dailyMax) * 100));
+
+      const estRevenue = validAppts.reduce((sum, a) => sum + (a.totalPrice || 0), 0);
+
+      document.getElementById('managerKpiGrid').innerHTML = `
+        <div class="card-surface rounded-xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">Tổng lịch hẹn</div>
+          <div class="text-2xl font-mono font-bold mt-1">${totalCount}</div>
+          <div class="text-[11px] text-emerald-400 font-mono mt-1">${validAppts.length} lịch đang hoạt động</div>
+        </div>
+        <div class="card-surface rounded-xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">Tỷ lệ khách đúng hẹn</div>
+          <div class="text-2xl font-mono font-bold text-emerald-400 mt-1">${onTimeRate}%</div>
+          <div class="text-[11px] text-[var(--text-muted)] font-mono mt-1">${onTrackCount}/${totalCount} lịch xác nhận & hoàn tất</div>
+        </div>
+        <div class="card-surface rounded-xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">Công suất xưởng hôm nay</div>
+          <div class="text-2xl font-mono font-bold text-sky-400 mt-1">${utilRate}%</div>
+          <div class="text-[11px] text-[var(--text-muted)] font-mono mt-1">${todayActive}/${dailyMax} lượt xe trong ngày</div>
+        </div>
+        <div class="card-surface rounded-xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">Doanh thu dịch vụ dự kiến</div>
+          <div class="text-2xl font-mono font-bold text-signal mt-1">${formatCurrency(estRevenue)}</div>
+          <div class="text-[11px] text-[var(--text-muted)] font-mono mt-1">Tính trên lịch hẹn hợp lệ</div>
+        </div>
+      `;
+
+      // Chart 1: Slot Load Bar Chart
+      const maxCap = appState.maxCapacityPerSlot;
+      document.getElementById('chartDateBadge').textContent = `${formatVNDate(today)}`;
+      document.getElementById('slotUtilizationChart').innerHTML = `
+        <div class="grid grid-cols-8 gap-2 items-end h-44 pt-4 pb-1 px-2 card-elevated rounded-lg">
+          ${TIME_SLOTS.map(slot => {
+            const load = getSlotLoadCount(today, slot);
+            const pct = Math.min(100, Math.round((load / maxCap) * 100));
+            const isFull = load >= maxCap;
+            const barColor = isFull ? 'bg-rose-500' : load === maxCap - 1 ? 'bg-amber-500' : 'bg-emerald-500';
+            return `
+              <div class="flex flex-col items-center h-full justify-end">
+                <div class="text-[10px] font-mono font-bold mb-1 ${isFull ? 'text-rose-400' : 'text-[var(--text-muted)]'}">${load}/${maxCap}</div>
+                <div class="w-full max-w-[32px] bg-black/30 rounded-t h-28 flex items-end overflow-hidden">
+                  <div class="w-full rounded-t ${barColor} transition-all" style="height: ${Math.max(8, pct)}%"></div>
+                </div>
+                <div class="text-[11px] font-mono font-semibold mt-1.5">${slot}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      // Chart 2: Status Distribution
+      const groups = [
+        { key: 'CONFIRMED', label: 'Đã xác nhận', color: 'bg-sky-400' },
+        { key: 'IN_PROGRESS', label: 'Đang thực hiện', color: 'bg-signal' },
+        { key: 'PENDING', label: 'Chờ xác nhận', color: 'bg-amber-400' },
+        { key: 'COMPLETED', label: 'Hoàn tất', color: 'bg-emerald-400' },
+        { key: 'INACTIVE', label: 'Đã hủy / Từ chối', color: 'bg-rose-500' }
+      ];
+
+      document.getElementById('statusDistributionPanel').innerHTML = groups.map(g => {
+        const count = allAppts.filter(a => g.key === 'INACTIVE' ? ['CANCELLED', 'REJECTED', 'NO_SHOW'].includes(a.status) : a.status === g.key).length;
+        const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+        return `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${g.color}"></span>${g.label}</span>
+              <span class="font-mono font-semibold">${count} (${pct}%)</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-black/30 overflow-hidden">
+              <div class="h-full ${g.color}" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Service Breakdown Table
+      let totalRev = 0;
+      document.getElementById('serviceAnalyticsTableBody').innerHTML = appState.services.map(srv => {
+        const count = validAppts.filter(a => a.serviceIds.includes(srv.id)).length;
+        const rev = count * srv.price;
+        totalRev += rev;
+        return `
+          <tr class="hover:bg-white/5">
+            <td class="py-2.5 px-3 font-mono font-bold text-sky-400">${srv.code}</td>
+            <td class="py-2.5 px-3 font-medium">${srv.name}</td>
+            <td class="py-2.5 px-3 text-[var(--text-muted)]">${srv.category}</td>
+            <td class="py-2.5 px-3 text-center font-mono">${srv.duration}p</td>
+            <td class="py-2.5 px-3 text-right font-mono">${formatCurrency(srv.price)}</td>
+            <td class="py-2.5 px-3 text-center font-mono font-bold">${count}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">${formatCurrency(rev)}</td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('analyticsTotalRevenue').textContent = formatCurrency(totalRev);
+    }
+
+    function renderManagerServicesTable() {
+      document.getElementById('managerServiceTableBody').innerHTML = appState.services.map(srv => `
+        <tr class="hover:bg-white/5">
+          <td class="py-2.5 px-3 font-mono font-bold text-sky-400">${srv.code}</td>
+          <td class="py-2.5 px-3">
+            <div class="font-semibold">${srv.name}</div>
+            <div class="text-[11px] text-[var(--text-muted)] line-clamp-1">${(srv.checklist || []).join(' • ')}</div>
+          </td>
+          <td class="py-2.5 px-3 text-[var(--text-muted)]">${srv.category}</td>
+          <td class="py-2.5 px-3 text-center font-mono">${srv.duration} phút</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-signal">${formatCurrency(srv.price)}</td>
+          <td class="py-2.5 px-3 text-center">
+            <button onclick="toggleServiceActive('${srv.id}')" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${
+              srv.active ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+            }">
+              ${srv.active ? 'Đang hoạt động' : 'Tạm ngưng'}
+            </button>
+          </td>
+          <td class="py-2.5 px-3 text-right">
+            <button onclick="openServiceEditorModal('${srv.id}')" class="px-2.5 py-1 rounded-md card-elevated hover:border-signal text-xs font-medium">
+              Sửa
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleServiceActive(srvId) {
+      const srv = appState.services.find(s => s.id === srvId);
+      if (!srv) return;
+      srv.active = !srv.active;
+      saveState();
+      syncAllViews();
+      showToast(`Đã cập nhật trạng thái dịch vụ ${srv.code}`, 'info');
+    }
+
+    function openServiceEditorModal(srvId = null) {
+      if (srvId) {
+        const srv = appState.services.find(s => s.id === srvId);
+        if (!srv) return;
+        document.getElementById('srvEditorTitle').textContent = `Chỉnh sửa Dịch vụ ${srv.code}`;
+        document.getElementById('editSrvId').value = srv.id;
+        document.getElementById('editSrvCode').value = srv.code;
+        document.getElementById('editSrvCategory').value = srv.category;
+        document.getElementById('editSrvName').value = srv.name;
+        document.getElementById('editSrvDuration').value = srv.duration;
+        document.getElementById('editSrvPrice').value = srv.price;
+        document.getElementById('editSrvChecklist').value = (srv.checklist || []).join('; ');
+      } else {
+        const nextIdx = String(appState.services.length + 1).padStart(2, '0');
+        document.getElementById('srvEditorTitle').textContent = 'Thêm Dịch vụ Mới';
+        document.getElementById('editSrvId').value = '';
+        document.getElementById('editSrvCode').value = `SRV-${nextIdx}`;
+        document.getElementById('editSrvCategory').value = 'Bảo dưỡng định kỳ';
+        document.getElementById('editSrvName').value = '';
+        document.getElementById('editSrvDuration').value = 60;
+        document.getElementById('editSrvPrice').value = 900000;
+        document.getElementById('editSrvChecklist').value = 'Kiểm tra tổng quát; Thực hiện bảo dưỡng tiêu chuẩn; Nghiệm thu bàn giao';
+      }
+      openModal('modalServiceEditor');
+    }
+
+    function saveServiceFromModal() {
+      const id = document.getElementById('editSrvId').value;
+      const code = document.getElementById('editSrvCode').value.trim().toUpperCase();
+      const category = document.getElementById('editSrvCategory').value;
+      const name = document.getElementById('editSrvName').value.trim();
+      const duration = parseInt(document.getElementById('editSrvDuration').value || '60', 10);
+      const price = parseInt(document.getElementById('editSrvPrice').value || '0', 10);
+      const rawChecklist = document.getElementById('editSrvChecklist').value.trim();
+      const checklist = rawChecklist ? rawChecklist.split(';').map(i => i.trim()).filter(Boolean) : ['Bảo dưỡng tiêu chuẩn'];
+
+      if (!code || !name || duration <= 0 || price <= 0) {
+        showToast('Vui lòng điền đầy đủ thông tin hợp lệ', 'warning');
+        return;
+      }
+
+      if (id) {
+        const existing = appState.services.find(s => s.id === id);
+        if (existing) {
+          existing.code = code;
+          existing.category = category;
+          existing.name = name;
+          existing.duration = duration;
+          existing.price = price;
+          existing.checklist = checklist;
+          existing.description = checklist.join(' • ');
+        }
+        showToast(`Đã cập nhật dịch vụ ${code}`, 'success');
+      } else {
+        appState.services.push({
+          id: code,
+          code,
+          name,
+          category,
+          duration,
+          price,
+          warranty: '6 tháng',
+          active: true,
+          description: checklist.join(' • '),
+          checklist
+        });
+        showToast(`Đã thêm dịch vụ ${code}`, 'success');
+      }
+
+      saveState();
+      closeModal('modalServiceEditor');
+      syncAllViews();
+    }
+
+    function renderManagerCapacityAndAccounts() {
+      document.getElementById('mgrCurrentMaxCap').textContent = appState.maxCapacityPerSlot;
+      document.getElementById('mgrDailyTotalCap').textContent = appState.maxCapacityPerSlot * TIME_SLOTS.length;
+
+      const bays = [
+        { name: 'Khoang 01 - Bảo dưỡng nhanh', tech: 'KTV. Đỗ Minh Tuấn' },
+        { name: 'Khoang 02 - Cầu nâng 2 trụ', tech: 'KTV. Phạm Văn Hùng' },
+        { name: 'Khoang 03 - Chẩn đoán & Động cơ', tech: 'KTV. Võ Thành Đạt' },
+        { name: 'Khoang 04 - Điện & Điều hòa', tech: 'KTV. Nguyễn Hoàng Long' },
+        { name: 'Khoang 05 - Khoang dự phòng', tech: 'KTV. Lê Văn Hòa' }
+      ];
+
+      document.getElementById('workshopBaysList').innerHTML = bays.map((b, idx) => {
+        const isActive = idx < appState.maxCapacityPerSlot;
+        return `
+          <div class="p-2.5 rounded-lg card-elevated flex items-center justify-between text-xs ${isActive ? '' : 'opacity-40'}">
+            <div>
+              <div class="font-semibold">${b.name}</div>
+              <div class="text-[11px] text-[var(--text-muted)]">${b.tech}</div>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded ${isActive ? 'bg-emerald-500/15 text-emerald-400' : 'card-surface text-[var(--text-muted)]'}">
+              ${isActive ? 'Hoạt động' : 'Dự phòng'}
+            </span>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('rbacAccountsTableBody').innerHTML = appState.accounts.map(acc => `
+        <tr class="hover:bg-white/5">
+          <td class="py-2.5 px-3 font-semibold">${acc.name}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-[var(--text-muted)]">${acc.phone || '0909888777'}</td>
+          <td class="py-2.5 px-3">
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded card-elevated">${ROLE_NAMES[acc.role]}</span>
+          </td>
+          <td class="py-2.5 px-3 font-mono text-xs text-[var(--text-muted)]">${acc.meta}</td>
+          <td class="py-2.5 px-3 text-right">
+            <button onclick="selectAccountLogin('${acc.id}')" class="px-2.5 py-1 rounded-md card-elevated hover:border-signal text-xs font-medium">
+              Chuyển sang
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function adjustMaxCapacity(delta) {
+      const next = appState.maxCapacityPerSlot + delta;
+      if (next < 1 || next > 5) {
+        showToast('Giới hạn cấu hình từ 1 đến 5 xe / khung giờ', 'warning');
+        return;
+      }
+      appState.maxCapacityPerSlot = next;
+      saveState();
+      syncAllViews();
+      showToast(`Đã cập nhật định mức: ${next} xe / khung giờ`, 'success');
+    }
+
+    function openAddUserModal() {
+      document.getElementById('newUserName').value = '';
+      document.getElementById('newUserPhone').value = '';
+      document.getElementById('newUserMeta').value = '';
+      openModal('modalAddUser');
+    }
+
+    function saveNewAccount() {
+      const name = document.getElementById('newUserName').value.trim();
+      const phone = document.getElementById('newUserPhone').value.trim();
+      const role = document.getElementById('newUserRole').value;
+      const meta = document.getElementById('newUserMeta').value.trim();
+
+      if (!name || !phone || !meta) {
+        showToast('Vui lòng nhập đầy đủ thông tin tài khoản', 'warning');
+        return;
+      }
+
+      const words = name.split(' ').filter(Boolean);
+      const avatar = (words.length >= 2 ? words[words.length - 2][0] + words[words.length - 1][0] : name.slice(0, 2)).toUpperCase();
+      appState.accounts.push({
+        id: `ACC-0${appState.accounts.length + 1}`,
+        name,
+        phone,
+        role,
+        avatar,
+        meta
+      });
+      saveState();
+      closeModal('modalAddUser');
+      syncAllViews();
+      showToast(`Đã thêm tài khoản ${name}`, 'success');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      fillPresetCar(0);
+      syncAllViews();
+    });
+  </script>
+</body>
+</html>

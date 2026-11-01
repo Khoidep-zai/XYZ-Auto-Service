@@ -22,9 +22,16 @@ public class InitialData {
                     service("SRV-03", "Bảo dưỡng Hệ thống Phanh ABS 4 bánh", "Hệ thống phanh & Gầm", 60, 850000, "6 tháng", "Vệ sinh cụm phanh; Đo má phanh; Kiểm tra ABS"),
                     service("SRV-04", "Chẩn đoán & Sửa chữa Động cơ", "Sửa chữa động cơ", 120, 2400000, "12 tháng", "Đọc lỗi động cơ; Kiểm tra đánh lửa; Vệ sinh kim phun"),
                     service("SRV-05", "Cân chỉnh Thước lái & Độ chụm 3D", "Hệ thống phanh & Gầm", 60, 750000, "3 tháng", "Kiểm tra rô-tuyn; Đo góc đặt bánh xe; Cân chỉnh độ chụm"),
-                    service("SRV-06", "Vệ sinh Điều hòa Nội soi & Khử khuẩn", "Điện & Điều hòa", 75, 950000, "6 tháng", "Đo nhiệt độ; Vệ sinh dàn lạnh; Khử khuẩn cabin")
+                    service("SRV-06", "Vệ sinh Điều hòa Nội soi & Khử khuẩn", "Điện & Điều hòa", 75, 950000, "6 tháng", "Đo nhiệt độ; Vệ sinh dàn lạnh; Khử khuẩn cabin"),
+                    service("SRV-07", "Kiểm tra & Thay Ắc quy Ô tô Chính hãng", "Hệ thống Điện & Ắc quy", 30, 1850000, "12 tháng", "Đo dòng nạp máy phát điện; Đo điện áp tĩnh ắc quy cũ; Lắp đặt ắc quy mới; Bôi mỡ bảo vệ cực"),
+                    service("SRV-08", "Kiểm tra Tổng quát An toàn Xe Trước Chuyến Đi", "Kiểm định & An toàn", 45, 500000, "1 tháng", "Kiểm tra lốp, áp suất lốp; Kiểm tra mức nước làm mát; Kiểm tra đèn chiếu sáng; Kiểm tra dây đai")
                 ));
             }
+            // Đảm bảo luôn có sẵn 3 tài khoản mặc định cho 3 vai trò nếu DB trắng
+            ensureAccount(accounts, passwords, "0901234567", "Nguyễn Quản Lý", WorkshopDomain.Role.MANAGER, "Quản lý trung tâm XYZ", "12345678");
+            ensureAccount(accounts, passwords, "0912345678", "Trần Tiếp Nhận", WorkshopDomain.Role.STAFF, "Nhân viên tiếp nhận xưởng", "12345678");
+            ensureAccount(accounts, passwords, "0988888888", "Lê Khách Hàng", WorkshopDomain.Role.CUSTOMER, "Khách hàng VIP", "12345678");
+
             if (!adminPhone.isBlank() || !adminPassword.isBlank()) {
                 if (!adminPhone.matches("0[0-9]{9,10}") || adminPassword.length() < 8)
                     throw new IllegalStateException("APP_BOOTSTRAP_ADMIN_PHONE và APP_BOOTSTRAP_ADMIN_PASSWORD không hợp lệ");
@@ -42,6 +49,19 @@ public class InitialData {
                 }
             }
         };
+    }
+
+    private static void ensureAccount(AccountRepository accounts, PasswordEncoder passwords,
+            String phone, String name, WorkshopDomain.Role role, String meta, String defaultPassword) {
+        if (accounts.findByPhone(phone).isEmpty()) {
+            var account = new WorkshopDomain.Account();
+            account.phone = phone;
+            account.name = name;
+            account.role = role;
+            account.meta = meta;
+            account.passwordHash = passwords.encode(defaultPassword);
+            accounts.save(account);
+        }
     }
 
     private static WorkshopDomain.ServiceItem service(String id, String name, String category, int duration,

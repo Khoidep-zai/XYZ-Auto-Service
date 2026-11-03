@@ -118,7 +118,11 @@ $env:DB_PASSWORD = "postgres"
    ```sql
    CREATE DATABASE xyz_auto_service WITH ENCODING 'UTF8';
    ```
-2. Nạp script cơ sở dữ liệu:
+2. **Chỉ dùng script sau với cơ sở dữ liệu thử trống:** script có lệnh `DROP TABLE`
+   và sẽ xóa dữ liệu các bảng hiện có. Sao lưu và dùng quy trình migration phù hợp
+   nếu cơ sở dữ liệu đã chứa dữ liệu cần giữ.
+
+   Nạp script cơ sở dữ liệu thử:
    ```powershell
    & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -p 5433 -d xyz_auto_service -f xyz_auto_service_postgresql.sql
    ```
@@ -129,7 +133,7 @@ $env:DB_PASSWORD = "postgres"
 
 ## 6. DANH BẠ TÀI KHOẢN MẪU DÙNG THỬ HỆ THỐNG
 
-Hệ thống luôn tự động nạp sẵn 3 tài khoản mẫu đại diện cho 3 vai trò nghiệp vụ (Mật khẩu mặc định: **`12345678`**):
+Profile `dev` tự động nạp 3 tài khoản mẫu đại diện cho 3 vai trò nghiệp vụ (mật khẩu mẫu: **`12345678`**):
 
 | Vai trò người dùng | Số điện thoại đăng nhập | Mật khẩu | Phạm vi quyền hạn kiểm thử |
 | :--- | :---: | :---: | :--- |
@@ -138,6 +142,11 @@ Hệ thống luôn tự động nạp sẵn 3 tài khoản mẫu đại diện c
 | **Khách hàng Mẫu (`CUSTOMER`)** | **`0988888888`** | `12345678` | Khách VIP, đặt lịch trực tuyến, theo dõi tiến độ xe, thay đổi hoặc hủy lịch hẹn |
 
 *(Khách hàng mới có thể tự đăng ký tài khoản trực tiếp ngay trên giao diện web).*
+
+Với profile `postgres`, ứng dụng không tự tạo các tài khoản mẫu. Để tạo tài khoản
+quản lý ban đầu, đặt `APP_BOOTSTRAP_ADMIN_PHONE` và `APP_BOOTSTRAP_ADMIN_PASSWORD`
+trong cấu hình chạy. Các tài khoản mẫu đã tồn tại trong cơ sở dữ liệu, kể cả do
+script SQL tạo, không tự bị xóa; hãy kiểm tra và xử lý chúng trước khi dùng dữ liệu thật.
 
 ---
 

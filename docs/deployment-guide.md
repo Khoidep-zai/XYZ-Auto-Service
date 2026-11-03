@@ -48,7 +48,7 @@ Dự án có sẵn file [`docker-compose.yml`](file:///c:/O%20E/Qu%E1%BA%A3n%20l
    ```bash
    docker compose up -d
    ```
-2. Container PostgreSQL 16 sẽ tự động khởi tạo trên cổng `5432`, tạo database `xyz_auto_service` và tự động thực thi script `xyz_auto_service_postgresql.sql`.
+2. Container PostgreSQL 16 sẽ tự động khởi tạo trên cổng `5432`, tạo database `xyz_auto_service` và tự động thực thi script `xyz_auto_service_postgresql.sql`. Script có lệnh `DROP TABLE` và chỉ phù hợp với cơ sở dữ liệu thử; không chạy lại trên dữ liệu cần giữ.
 3. Chạy ứng dụng với cấu hình trỏ vào cổng 5432:
    ```powershell
    $env:DB_URL = "jdbc:postgresql://localhost:5432/xyz_auto_service"
@@ -63,7 +63,8 @@ Trên máy thực tế của bạn, PostgreSQL 18 đang lắng nghe tại cổng
    ```sql
    CREATE DATABASE xyz_auto_service WITH ENCODING 'UTF8';
    ```
-2. Nạp dữ liệu mẫu ban đầu:
+2. Chỉ nạp dữ liệu mẫu vào cơ sở dữ liệu thử trống: script xóa các bảng hiện có.
+   Sao lưu dữ liệu cần giữ và không chạy script này trên cơ sở dữ liệu đang sử dụng.
    ```powershell
    & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -p 5433 -d xyz_auto_service -f xyz_auto_service_postgresql.sql
    ```

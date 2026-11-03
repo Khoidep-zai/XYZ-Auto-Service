@@ -12,7 +12,8 @@ public class InitialData {
     @Bean ApplicationRunner initializeWorkshop(ServiceRepository services, SettingsRepository settings,
             AccountRepository accounts, PasswordEncoder passwords,
             @Value("${APP_BOOTSTRAP_ADMIN_PHONE:}") String adminPhone,
-            @Value("${APP_BOOTSTRAP_ADMIN_PASSWORD:}") String adminPassword) {
+            @Value("${APP_BOOTSTRAP_ADMIN_PASSWORD:}") String adminPassword,
+            @Value("${app.seed-demo-accounts:false}") boolean seedDemoAccounts) {
         return args -> {
             if (!settings.existsById(1L)) settings.save(new WorkshopDomain.Settings());
             if (services.count() == 0) {
@@ -27,10 +28,11 @@ public class InitialData {
                     service("SRV-08", "Kiểm tra Tổng quát An toàn Xe Trước Chuyến Đi", "Kiểm định & An toàn", 45, 500000, "1 tháng", "Kiểm tra lốp, áp suất lốp; Kiểm tra mức nước làm mát; Kiểm tra đèn chiếu sáng; Kiểm tra dây đai")
                 ));
             }
-            // Đảm bảo luôn có sẵn 3 tài khoản mặc định cho 3 vai trò nếu DB trắng
-            ensureAccount(accounts, passwords, "0901234567", "Nguyễn Quản Lý", WorkshopDomain.Role.MANAGER, "Quản lý trung tâm XYZ", "12345678");
-            ensureAccount(accounts, passwords, "0912345678", "Trần Tiếp Nhận", WorkshopDomain.Role.STAFF, "Nhân viên tiếp nhận xưởng", "12345678");
-            ensureAccount(accounts, passwords, "0988888888", "Lê Khách Hàng", WorkshopDomain.Role.CUSTOMER, "Khách hàng VIP", "12345678");
+            if (seedDemoAccounts) {
+                ensureAccount(accounts, passwords, "0901234567", "Nguyễn Quản Lý", WorkshopDomain.Role.MANAGER, "Quản lý trung tâm XYZ", "12345678");
+                ensureAccount(accounts, passwords, "0912345678", "Trần Tiếp Nhận", WorkshopDomain.Role.STAFF, "Nhân viên tiếp nhận xưởng", "12345678");
+                ensureAccount(accounts, passwords, "0988888888", "Lê Khách Hàng", WorkshopDomain.Role.CUSTOMER, "Khách hàng VIP", "12345678");
+            }
 
             if (!adminPhone.isBlank() || !adminPassword.isBlank()) {
                 if (!adminPhone.matches("0[0-9]{9,10}") || adminPassword.length() < 8)

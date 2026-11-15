@@ -28,6 +28,7 @@
 9. [Minh chứng kiểm thử tích hợp tự động](#9-minh-chứng-kiểm-thử-tích-hợp-tự-động)
 10. [Cấu trúc mã nguồn chuẩn hóa](#10-cấu-trúc-mã-nguồn-chuẩn-hóa)
 11. [Hệ thống tài liệu dự án (@docs)](#11-hệ-thống-tài-liệu-dự-án-docs)
+12. [Đội ngũ phát triển & Đóng góp thành viên (Contributors)](#12-đội-ngũ-phát-triển--đóng-góp-thành-viên-contributors)
 
 ---
 
@@ -335,6 +336,18 @@ Tất cả các tài liệu kỹ thuật chuyên sâu được biên soạn đ�
 * 🎨 [Sơ đồ Use Case (Draw.io)](docs/usecase.drawio)
 * 🗄️ [Sơ đồ ERD 3NF (Draw.io)](docs/erd.drawio)
 * 📐 [Sơ đồ Kiến trúc hệ thống (Draw.io)](docs/architecture.drawio)
+
+---
+
+## 12. ĐỘI NGŨ PHÁT TRIỂN & ĐÓNG GÓP THÀNH VIÊN (CONTRIBUTORS)
+
+Chi tiết hồ sơ đóng góp và ma trận trách nhiệm RACI được ghi nhận tại [**`CONTRIBUTORS.md`**](CONTRIBUTORS.md).
+
+| Họ và tên | MSSV | Vai trò chính | GitHub | Đóng góp trọng tâm |
+| :--- | :---: | :--- | :---: | :--- |
+| **Nguyễn Bá Anh Khôi** | `2374802010247` | **Scrum Master** kiêm Backend Dev | [@Khoidep-zai](https://github.com/Khoidep-zai) | Quản trị dự án, Sprint, EVM, kiến trúc Spring Boot, API, Security & Pessimistic Lock, điều phối tích hợp. |
+| **Trần Văn Khoa** | `2374802013414` | **Product Owner** kiêm Frontend Dev | [@Khoa-Tran](https://github.com/) | Quản lý Product Backlog, User Stories, thiết kế Figma, lập trình giao diện người dùng SPA. |
+| **Nguyễn Tiến Dũng** | `2274802010102` | **Developer** kiêm QA & Database | [@NguyenTienDung29](https://github.com/NguyenTienDung29) | Tách biệt mô-đun Frontend/Backend & cấu hình Maven đóng gói, tối ưu bảo mật `WorkshopService` (ràng buộc SĐT chính chủ), mở rộng `WorkshopFlowTests`, kịch bản E2E `smoke_booking.py`, chuẩn hóa PostgreSQL & script khởi chạy 1-click `run-dev.*` / `run-postgres.*`. |
 
 ---
 

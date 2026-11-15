@@ -125,10 +125,19 @@ public class WorkshopService {
     @Transactional
     public Long book(Principal principal, ApiModels.BookingInput input) {
         var actor = current(principal); var config = lockSettings();
-        if (input.walkIn()) requireStaff(actor);
+        if (input.walkIn()) {
+            requireStaff(actor);
+        } else {
+            // An online booking must belong to the logged-in CUSTOMER, not an arbitrary phone number.
+            if (actor.role != Role.CUSTOMER)
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ khách hàng được đặt lịch trực tuyến");
+            if (!actor.phone.equals(input.phone()))
+                throw invalid("Số điện thoại đặt lịch phải trùng với tài khoản đăng nhập");
+        }
         var appointment = new Appointment();
         appointment.customer = input.walkIn() ? accounts.findByPhone(input.phone()).filter(a -> a.role == Role.CUSTOMER).orElse(null) : actor;
-        appointment.customerName = clean(input.customerName()); appointment.phone = input.phone();
+        appointment.customerName = input.walkIn() ? clean(input.customerName()) : actor.name;
+        appointment.phone = input.walkIn() ? input.phone() : actor.phone;
         appointment.licensePlate = clean(input.licensePlate()).toUpperCase(Locale.ROOT);
         appointment.carModel = clean(input.carModel()); appointment.date = input.date(); appointment.slot = input.slot();
         appointment.note = clean(input.note());

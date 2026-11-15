@@ -30,9 +30,9 @@ CREATE TABLE workshop_accounts (
 
 -- Mật khẩu mặc định: 12345678 (BCrypt hash)
 INSERT INTO workshop_accounts (id, phone, name, password_hash, role, meta) VALUES
-(1, '0901234567', 'Nguyễn Quản Lý', '$2a$10$wK1k6Oq3c3I1v7u1sJpAeuo6mH4aM1qT0f9rVnL3eC8yF9Z2.XQmW', 'MANAGER', 'Quản lý trung tâm XYZ'),
-(2, '0912345678', 'Trần Tiếp Nhận', '$2a$10$wK1k6Oq3c3I1v7u1sJpAeuo6mH4aM1qT0f9rVnL3eC8yF9Z2.XQmW', 'STAFF', 'Nhân viên tiếp nhận xưởng'),
-(3, '0988888888', 'Lê Khách Hàng', '$2a$10$wK1k6Oq3c3I1v7u1sJpAeuo6mH4aM1qT0f9rVnL3eC8yF9Z2.XQmW', 'CUSTOMER', 'Khách hàng VIP');
+(1, '0901234567', 'Nguyễn Quản Lý', '$2a$10$VbhdpL6NcK/4qDC5UBm3NOHtYwwW7AGKswRGQ28Bm3KDgc/dgK1Mi', 'MANAGER', 'Quản lý trung tâm XYZ'),
+(2, '0912345678', 'Trần Tiếp Nhận', '$2a$10$VbhdpL6NcK/4qDC5UBm3NOHtYwwW7AGKswRGQ28Bm3KDgc/dgK1Mi', 'STAFF', 'Nhân viên tiếp nhận xưởng'),
+(3, '0988888888', 'Lê Khách Hàng', '$2a$10$VbhdpL6NcK/4qDC5UBm3NOHtYwwW7AGKswRGQ28Bm3KDgc/dgK1Mi', 'CUSTOMER', 'Khách hàng VIP');
 
 -- 3. Bảng danh mục dịch vụ bảo dưỡng & sửa chữa (F01, F02)
 CREATE TABLE workshop_services (

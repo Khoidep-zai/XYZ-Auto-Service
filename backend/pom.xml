@@ -106,6 +106,35 @@
 
 	<build>
 		<plugins>
+			<!-- Copy static frontend files from ../frontend into Spring Boot's classpath
+			     so the UI remains served at /, /app.js, /workshop.css, /vendor/**. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-frontend-assets</id>
+						<phase>process-resources</phase>
+						<goals><goal>copy-resources</goal></goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+							<overwrite>true</overwrite>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/../frontend</directory>
+									<filtering>false</filtering>
+									<includes>
+										<include>index.html</include>
+										<include>app.js</include>
+										<include>workshop.css</include>
+										<include>vendor/**</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

@@ -76,6 +76,12 @@ class WorkshopFlowTests {
         var first = new Session(); first.register("0901000001", "First Customer");
         var second = new Session(); second.register("0901000002", "Second Customer");
         assertEquals(403, first.json("PUT", "/api/capacity", "{\"capacity\":5}").statusCode());
+        // Online bookings must not impersonate other customer accounts.
+        assertEquals(400, first.json("POST", "/api/appointments",
+                booking("0901000002", "51A-33333", "10:00")).statusCode());
+        // STAFF/MANAGER must use walkIn=true to create bookings for walk-in customers.
+        assertEquals(403, admin.json("POST", "/api/appointments",
+                booking("0988000000", "51A-44444", "10:00")).statusCode());
 
         var start = new java.util.concurrent.CountDownLatch(1);
         var a = CompletableFuture.supplyAsync(() -> attemptBooking(first, booking("0901000001", "51A-11111", "08:00"), start));

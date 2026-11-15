@@ -1,0 +1,14 @@
+**/.git
+**/.github
+**/.idea
+**/.vscode
+**/target
+**/*.class
+**/docs
+**/*.drawio
+**/tasks
+**/.scratch
+**/.specify
+**/.agents
+**/node_modules
+*.log

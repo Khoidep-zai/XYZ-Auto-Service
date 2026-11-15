@@ -78,6 +78,14 @@ CREATE TABLE workshop_appointments (
 
 CREATE INDEX idx_appointment_slot ON workshop_appointments(booking_date, slot, status);
 CREATE INDEX idx_appointment_customer ON workshop_appointments(customer_id);
+CREATE INDEX idx_appointment_phone ON workshop_appointments(phone);
+CREATE INDEX idx_appointment_license_plate ON workshop_appointments(license_plate);
+CREATE INDEX idx_appointment_status ON workshop_appointments(status);
+CREATE INDEX idx_appointment_customer_date ON workshop_appointments(customer_id, booking_date DESC, id DESC);
+
+-- Partial Unique Index (CDTN1): Chống race-condition đặt trùng biển số trong cùng một slot
+CREATE UNIQUE INDEX uq_appointment_slot_plate ON workshop_appointments (booking_date, slot, license_plate) 
+WHERE status NOT IN ('CANCELLED', 'REJECTED', 'NO_SHOW');
 
 -- Dữ liệu lịch hẹn mẫu để trình diễn (Câu 8)
 INSERT INTO workshop_appointments (id, customer_id, customer_name, phone, license_plate, car_model, booking_date, slot, status, total_duration, total_price, bay, technician, note, staff_note) VALUES
@@ -94,13 +102,15 @@ CREATE TABLE workshop_appointment_services (
     service_duration INT NOT NULL
 );
 
+CREATE INDEX idx_appointment_services_appt_id ON workshop_appointment_services(appointment_id);
+
 INSERT INTO workshop_appointment_services (appointment_id, service_code, service_name, service_price, service_duration) VALUES
 (1, 'SRV-01', 'Bảo dưỡng định kỳ cấp 10.000km', 1450000, 60),
 (1, 'SRV-02', 'Thay dầu động cơ Tổng hợp & Lọc dầu', 1150000, 45),
 (2, 'SRV-03', 'Bảo dưỡng Hệ thống Phanh ABS 4 bánh', 850000, 60),
 (3, 'SRV-02', 'Thay dầu động cơ Tổng hợp & Lọc dầu', 1150000, 45);
 
--- Cập nhật sequence
-SELECT setval('workshop_accounts_id_seq', (SELECT MAX(id) FROM workshop_accounts));
-SELECT setval('workshop_appointments_id_seq', (SELECT MAX(id) FROM workshop_appointments));
+-- Cập nhật sequence an toàn
+SELECT setval('workshop_accounts_id_seq', GREATEST((SELECT last_value FROM workshop_accounts_id_seq), COALESCE((SELECT MAX(id) FROM workshop_accounts), 1)), true);
+SELECT setval('workshop_appointments_id_seq', GREATEST((SELECT last_value FROM workshop_appointments_id_seq), COALESCE((SELECT MAX(id) FROM workshop_appointments), 1)), true);
 

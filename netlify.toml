@@ -1,0 +1,59 @@
+# Netlify Configuration for XYZ Auto Service
+# Handles static asset hosting, API proxy rewrites, and security headers.
+
+[build]
+  publish = "frontend"
+  command = "node ./build-redirects.js || true"
+
+# Proxy /api/* requests to backend server.
+# Netlify routes incoming calls matching /api/* to the backend preserving the rest of the path via :splat.
+# Status 200 performs an internal rewrite (proxying response directly without client URL change or CORS issues).
+[[redirects]]
+  from = "/api/*"
+  to = "http://localhost:8080/api/:splat"
+  status = 200
+  force = false
+
+# SPA Fallback: rewrite all non-file client routes to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Global HTTP Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-XSS-Protection = "1; mode=block"
+
+# Static Vendor Assets: Long-term immutable caching for Font Awesome fonts and styles
+[[headers]]
+  for = "/vendor/fontawesome/webfonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# CSS stylesheets: cached with revalidation
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+# JavaScript bundles: cached with revalidation
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+# Main HTML entry point: always revalidated to deliver fresh app updates immediately
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

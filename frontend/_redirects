@@ -1,0 +1,6 @@
+# Netlify Redirects / Proxy Configuration
+# Rewrites /api/* to the backend preserving path with status 200 (internal proxy, no CORS issues)
+/api/*  http://localhost:8080/api/:splat  200
+
+# SPA catch-all rule: routes client-side navigations to index.html
+/*      /index.html                       200

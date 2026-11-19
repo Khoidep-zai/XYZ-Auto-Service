@@ -30,23 +30,78 @@ for (let offset = 0; offset < 8; offset++) {
   if (slot) { selectedBookingDate = date; selectedBookingSlot = slot; break; }
 }
 
-async function refreshCsrf() {
-  const response = await fetch('/api/csrf', {credentials: 'same-origin'});
-  if (!response.ok) throw new Error('Không thể kết nối đến máy chủ');
-  const data = await response.json();
-  csrfToken = data.token; csrfHeader = data.headerName;
+// Resolve the backend API base URL.
+// Priority:
+// 1. window.BACKEND_API_URL or window.BACKEND_URL (global / window config)
+// 2. localStorage.getItem('BACKEND_API_URL') or localStorage.getItem('BACKEND_URL') (persistent client config)
+// 3. '' (relative paths /api/*, seamlessly routed by Netlify rewrite proxy or same-origin host)
+function getBackendBaseUrl() {
+  if (typeof window !== 'undefined') {
+    if (window.BACKEND_API_URL && typeof window.BACKEND_API_URL === 'string') {
+      return window.BACKEND_API_URL.trim().replace(/\/+$/, '');
+    }
+    if (window.BACKEND_URL && typeof window.BACKEND_URL === 'string') {
+      return window.BACKEND_URL.trim().replace(/\/+$/, '');
+    }
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('BACKEND_API_URL') || localStorage.getItem('BACKEND_URL');
+      if (stored && typeof stored === 'string') {
+        return stored.trim().replace(/\/+$/, '');
+      }
+    }
+  } catch (_) { /* Ignore storage access errors in restricted contexts */ }
+  return '';
 }
 
-async function api(path, {method = 'GET', body, form = false} = {}) {
+function resolveApiUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = getBackendBaseUrl();
+  if (!base) return path;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${cleanPath}`;
+}
+
+async function refreshCsrf() {
+  const url = resolveApiUrl('/api/csrf');
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) throw new Error('Không thể kết nối đến máy chủ');
+  const data = await response.json();
+  csrfToken = data.token; csrfHeader = data.headerName || 'X-CSRF-TOKEN';
+}
+
+async function api(path, {method = 'GET', body, form = false, retry = true} = {}) {
   const headers = {};
   if (method !== 'GET') {
     if (!csrfToken) await refreshCsrf();
-    headers[csrfHeader] = csrfToken;
+    if (csrfToken && csrfHeader) {
+      headers[csrfHeader] = csrfToken;
+    }
     headers['Content-Type'] = form ? 'application/x-www-form-urlencoded;charset=UTF-8' : 'application/json';
   }
-  const response = await fetch(path, {method, headers, credentials:'same-origin',
-    body: body === undefined ? undefined : form ? new URLSearchParams(body) : JSON.stringify(body)});
+  const url = resolveApiUrl(path);
+  const response = await fetch(url, {
+    method,
+    headers,
+    credentials: 'include',
+    body: body === undefined ? undefined : form ? new URLSearchParams(body) : JSON.stringify(body)
+  });
   if (!response.ok) {
+    if (response.status === 403 && method !== 'GET' && retry) {
+      try {
+        csrfToken = null;
+        await refreshCsrf();
+        return await api(path, {method, body, form, retry: false});
+      } catch (_) { /* Fall through to error handler */ }
+    }
     let message = response.status === 401 ? 'Số điện thoại hoặc mật khẩu không đúng, hoặc phiên đăng nhập đã hết hạn'
       : response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này' : 'Không thể thực hiện yêu cầu';
     try { message = (await response.json()).message || message; } catch (_) { /* Security responses may have no JSON body. */ }

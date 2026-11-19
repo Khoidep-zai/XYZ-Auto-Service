@@ -1,16 +1,20 @@
 # ==========================================
 # Stage 1: Build Application with Maven & Packaging
 # ==========================================
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /build
 
-# Copy Maven settings and dependencies cache first
+# Copy Maven settings and dependencies cache first for efficient Docker layer caching
 COPY backend/pom.xml ./backend/
 COPY backend/.mvn ./backend/.mvn/
 COPY backend/mvnw ./backend/
 
+WORKDIR /build/backend
+RUN mvn dependency:go-offline -B || true
+
 # Copy frontend assets and backend source code
+WORKDIR /build
 COPY frontend ./frontend/
 COPY backend/src ./backend/src/
 
@@ -24,7 +28,7 @@ RUN mvn clean package -DskipTests
 # ==========================================
 FROM eclipse-temurin:21-jre-alpine
 
-LABEL maintainer="Khoidep-zai & Team"
+LABEL maintainer="XYZ Auto Service Team"
 LABEL description="WorkshopOS XYZ Auto Service Production Container"
 
 # Create unprivileged system user/group for security

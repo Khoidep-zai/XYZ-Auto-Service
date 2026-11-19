@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>XYZ Auto Service — Hệ thống Đặt lịch & Điều phối Bảo dưỡng Ô tô</title>
+  <!-- Preload critical assets for fast initial render -->
+  <link rel="preload" href="/workshop.css" as="style">
+  <link rel="preload" href="/vendor/fontawesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
   <link rel="stylesheet" href="/workshop.css">
   <!-- Google Fonts: Plus Jakarta Sans, Space Grotesk, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +15,15 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+
+  <!-- Backend API URL config (optional):
+       Leave empty or unset to use the Netlify /api/* rewrite proxy automatically.
+       To connect directly to an external backend (e.g. Render, Railway, Fly.io, or localhost),
+       set window.BACKEND_API_URL = 'https://your-backend.example.com' or use localStorage.setItem('BACKEND_API_URL', 'https://your-backend.example.com')
+  -->
+  <script>
+    window.BACKEND_API_URL = window.BACKEND_API_URL || '';
+  </script>
 
   <style>
     :root {

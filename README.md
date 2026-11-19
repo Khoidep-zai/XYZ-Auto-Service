@@ -297,7 +297,7 @@ XYZ_Auto_Service/
 │   ├── srs.md                              <-- Đặc tả yêu cầu phần mềm chi tiết
 │   ├── architecture.md                     <-- Tài liệu kiến trúc hệ thống
 │   ├── api-contract.md                     <-- Hợp đồng giao diện REST API
-│   ├── deployment-guide.md                 <-- Hướng dẫn triển khai & vận hành
+│   ├── DEPLOYMENT_GUIDE.md                 <-- Hướng dẫn triển khai Internet & vận hành
 │   ├── test-plan.md                        <-- Kế hoạch kiểm thử chất lượng
 │   ├── test-report.md                      <-- Báo cáo kết quả kiểm thử tự động
 │   ├── checklist-bao-mat.md                <-- Báo cáo an toàn thông tin & OWASP
@@ -327,7 +327,7 @@ Tất cả các tài liệu kỹ thuật chuyên sâu được biên soạn đ�
 * 📖 [Đặc tả yêu cầu phần mềm (SRS)](docs/srs.md)
 * 🏛️ [Tài liệu Kiến trúc hệ thống](docs/architecture.md)
 * 🔌 [Hợp đồng giao diện API (API Contract)](docs/api-contract.md)
-* 🚀 [Hướng dẫn Triển khai & Vận hành](docs/deployment-guide.md)
+* 🚀 [Hướng dẫn Triển khai Internet & Vận hành](docs/DEPLOYMENT_GUIDE.md)
 * 🧪 [Kế hoạch kiểm thử (Test Plan)](docs/test-plan.md)
 * 📊 [Báo cáo kết quả kiểm thử (Test Report)](docs/test-report.md)
 * 🛡️ [Checklist An toàn thông tin & Bảo mật](docs/checklist-bao-mat.md)
